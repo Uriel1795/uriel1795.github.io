@@ -1,0 +1,143 @@
+ .u-section-1 {
+  background-image: none;
+  min-height: 1717px;
+}
+
+.u-section-1 .u-group-1 {
+  width: calc(((100% - 1140px) / 2) + 798px);
+  min-height: 1682px;
+  margin: 39px auto 0 0;
+}
+
+.u-section-1 .u-container-layout-1 {
+  padding: 0 0 0 60px;
+}
+
+.u-section-1 .u-text-1 {
+  margin: 0 auto 0 2px;
+}
+
+.u-section-1 .u-text-2 {
+  margin: 24px auto 0 2px;
+}
+
+.u-section-1 .u-text-3 {
+  margin: 20px 3px 0 26px;
+}
+
+.u-section-1 .u-text-4 {
+  margin: 20px auto 0 2px;
+}
+
+.u-section-1 .u-text-5 {
+  margin: 20px 2px 0;
+}
+
+.u-section-1 .u-text-6 {
+  margin: 20px 0 0;
+}
+
+.u-section-1 .u-text-7 {
+  margin: 20px auto 0 2px;
+}
+
+.u-section-1 .u-text-8 {
+  margin: 20px auto 0 1px;
+}
+
+.u-section-1 .u-text-9 {
+  margin: 25px auto 0 2px;
+}
+
+.u-section-1 .u-text-10 {
+  text-align: left;
+  margin: 20px 0 0 auto;
+}
+
+.u-section-1 .u-text-11 {
+  text-align: left;
+  margin: 20px 0 0 auto;
+}
+
+.u-section-1 .u-text-12 {
+  text-align: left;
+  margin: 20px 0 0 auto;
+}
+
+.u-section-1 .u-text-13 {
+  text-align: left;
+  margin: 20px 0 0 auto;
+}
+
+.u-section-1 .u-text-14 {
+  text-align: left;
+  margin: 20px 52px 0 0;
+}
+
+.u-section-1 .u-text-15 {
+  text-align: left;
+  margin: 20px auto 0 0;
+}
+
+.u-section-1 .u-text-16 {
+  text-align: left;
+  margin: 20px 1px 0;
+}
+
+.u-section-1 .u-btn-1 {
+  background-image: none;
+  border-style: none;
+}
+
+@media (max-width: 1199px) {
+  .u-section-1 .u-group-1 {
+    width: calc(((100% - 940px) / 2) + 702px);
+  }
+}
+
+@media (max-width: 991px) {
+  .u-section-1 .u-group-1 {
+    width: calc(((100% - 720px) / 2) + 702px);
+    margin-left: calc(((100% - 720px) / 2));
+  }
+
+  .u-section-1 .u-container-layout-1 {
+    padding-left: 30px;
+  }
+
+  .u-section-1 .u-text-3 {
+    margin-right: 0;
+    margin-left: 0;
+  }
+
+  .u-section-1 .u-text-5 {
+    margin-right: 0;
+  }
+
+  .u-section-1 .u-text-16 {
+    margin-right: 52px;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .u-section-1 .u-group-1 {
+    width: 590px;
+    margin-left: auto;
+  }
+
+  .u-section-1 .u-container-layout-1 {
+    padding-bottom: 3px;
+    padding-left: 10px;
+  }
+}
+
+@media (max-width: 575px) {
+  .u-section-1 .u-group-1 {
+    width: 340px;
+  }
+
+  .u-section-1 .u-container-layout-1 {
+    padding-bottom: 5px;
+  }
+}
