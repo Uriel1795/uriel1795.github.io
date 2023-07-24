@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script
+    src="https://code.jquery.com/jquery-3.7.0.js"
+    integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM="
+    crossorigin="anonymous">
+  </script>
+  
+  <style>
+  
+    body {
+      font-family: sans-serif;
+      background-image: url("https://media.istockphoto.com/id/520780496/vector/overhead-perspective-view-of-a-4-way-traffic-intersection.jpg?s=170667a&w=0&k=20&c=MChXncrfOJyxQgKLvIugcIbm86-2Z2rvgDYUCTIma6A=");
+      background-size: cover;
+    }
+    
+    #car{
+      transform: scaleX(-1);
+      -webkit-transform: scaleX(-1);
+      -moz-transform: scaleX(-1);
+      width: 11%;
+      position: absolute;
+      box-sizing: border-box;
+    }
+
+    #controlPanel {
+      float: left;
+      padding-top: 10px;
+    }
+    
+    #cont{
+      float: right;
+      padding-top: 410px;
+      padding-right: 100px;
+    }
+
+    #traffic-light {
+      height: 250px;
+      float: left;
+      background-color: #333;
+      border-radius: 40px;
+      margin: 0px 0;
+      padding: 20px;
+    }
+  
+    #boundary{
+      position: relative;
+      top: 350px;
+      right: 10px;
+      width: 10px;
+      height: 200px;
+    }
+    
+    .button {
+      background-color: gray;
+      color: white;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      margin: 10px 40px;
+      cursor: pointer;
+    }
+    
+    .bulb {
+      height: 50px;
+      width: 50px;
+      background-color: #111;
+      border-radius: 50%;
+      margin: 25px auto;
+      transition: background 500ms;
+    }
+
+    @-ms-viewport{
+      width: device-width;
+    }
+    
+    @media(min-width: 1500px){
+      body{;
+        background-position: 45% 35%;
+      }
+        
+      #car{
+         width: 9%;
+      }
+      
+      #cont{
+        padding-right: 130px;
+      }
+    }
+    
+    
+  </style>
+</head>
+
+<body>
+  <div id="controlPanel">
+    <h1 id="stopButton" class="button">Stop</h1>
+    <h1 id="slowButton" class="button">Slow</h1>
+    <h1 id="goButton" class="button">Go</h1>
+   <!-- <h1 id="resetButton" class="button"> Reset </h1> -->
+  </div>
+  <div id="traffic-light">
+    <div id="stopLight" class="bulb"></div>
+    <div id="slowLight" class="bulb"></div>
+    <div id="goLight" class="bulb"></div>
+  </div>
+  
+  <div id="cont">
+    <img id="car" src="https://raw.githubusercontent.com/Uriel1795/images/1a93733d7cda965feea5b1727386500a8db2ccf8/istockphoto-1138785358-2048x2048-fotor-bg-remover-2023072223217.png"></img>
+  </div>
+
+<div id="boundary">
+</div>
+  <script>
+  var $car = $('#car');
+  var boundary = $('#boundary').position();
+  var initialPos = $car.offset().left;
+  var text1 = "+=";
+  var speed = 0;
+  var isAnimating = false;
+  
+   function clearLights() {
+    $('#stopLight').css('backgroundColor', 'black');
+    $('#slowLight').css('backgroundColor', 'black');
+    $('#goLight').css('backgroundColor', 'black');
+  }
+  
+  /*function resetCarPos(){
+    $car.animate({left: initialPos}, 5);
+  }*/
+  
+  function moveCar(){
+    
+      tempCarPos = $car.position();
+    
+      if(boundary.left < tempCarPos.left){
+        $car.css({right: text1.concat(speed)});
+        
+        setTimeout(function(){
+        moveCar();
+        }, 50);
+    }
+  }
+  
+$('#stopButton').click(function(){
+  clearLights();
+  $('#stopLight').css("backgroundColor", "red");
+  speed = 0;
+});
+
+$('#slowButton').click(function(){
+  clearLights();
+  $('#slowLight').css("backgroundColor", "yellow");
+  speed = 1;
+  moveCar();
+});
+
+$('#goButton').click(function(){
+  clearLights();
+  $('#goLight').css("backgroundColor", "green");
+   speed = 5;
+  moveCar();
+});
+
+/*$('#resetButton').click(function() {
+  location.reload();
+});*/
+
+ 
+    
+</script>
+
+</body>
+
