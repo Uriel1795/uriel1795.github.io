@@ -2,30 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Display</title>
+    <title>Display Code from URL</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        #codeValue {
-            font-size: 24px;
-            padding: 20px;
-            border: 1px solid #ddd;
+            margin: 20px;
             background-color: #f4f4f4;
+            color: #333;
+        }
+        #codeDisplay {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #ddd;
+            border: dashed 2px #333;
+            font-size: 24px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div id="codeValue">Loading...</div>
+    <h1>Code Value:</h1>
+    <div id="codeDisplay">Loading...</div>
+
     <script>
-        document.getElementById('codeValue').textContent = 'Code:';
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        function displayCode() {
+            const code = getQueryParam('code');
+            const displayElement = document.getElementById('codeDisplay');
+            
+            if (code) {
+                displayElement.textContent = code;
+            } else {
+                displayElement.textContent = 'No code value provided in the URL.';
+            }
+        }
+
+        window.onload = displayCode;
     </script>
 </body>
 </html>
