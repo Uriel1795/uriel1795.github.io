@@ -3,31 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <title>Display Code from URL</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        #codeDisplay {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #ddd;
+            border: dashed 2px #333;
+            font-size: 24px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <h1>Code Value:</h1>
-    <p id="codeDisplay">Loading...</p>
+    <div id="codeDisplay">Loading...</div>
 
     <script>
-        // Function to get the value of a specific query parameter
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
         }
 
-        // Function to display the code value
         function displayCode() {
-            const code = getQueryParam('code'); // Get the "code" parameter from the URL
+            const code = getQueryParam('code');
             const displayElement = document.getElementById('codeDisplay');
             
             if (code) {
-                displayElement.textContent = code; // Display the code value
+                displayElement.textContent = code;
             } else {
-                displayElement.textContent = 'No code value provided in the URL.'; // Display a default message
+                displayElement.textContent = 'No code value provided in the URL.';
             }
         }
 
-        // Call the displayCode function when the page loads
         window.onload = displayCode;
     </script>
 </body>
