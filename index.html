@@ -6,17 +6,28 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0; /* Remove default margin */
+            padding: 0; /* Remove default padding */
             background-color: #f4f4f4;
             color: #333;
+            text-align: center; /* Center the h1 text */
+            height: 100vh; /* Make body take full viewport height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         #codeDisplay {
-            margin-top: 20px;
+            margin: auto; /* Center horizontally */
             padding: 10px;
-            background-color: #ddd;
+            background-color: #007bff; /* Blue background */
+            color: #ffffff; /* White text color */
             border: dashed 2px #333;
             font-size: 24px;
-            text-align: center;
+            width: fit-content; /* Adjust width to fit the content */
+            transition: transform 0.3s; /* Smooth transition for hover effect */
+        }
+        #codeDisplay:hover {
+            transform: scale(1.05); /* Slightly increase size on hover */
         }
     </style>
 </head>
