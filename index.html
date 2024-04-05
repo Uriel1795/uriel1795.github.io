@@ -6,34 +6,49 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0; /* Remove default margin */
-            padding: 0; /* Remove default padding */
+            margin: 0;
+            padding: 0;
             background-color: #f4f4f4;
             color: #333;
-            text-align: center; /* Center the h1 text */
-            height: 100vh; /* Make body take full viewport height */
+            text-align: center;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
         #codeDisplay {
-            margin: auto; /* Center horizontally */
+            margin: auto;
             padding: 10px;
-            background-color: #007bff; /* Blue background */
-            color: #ffffff; /* White text color */
+            background-color: #007bff;
+            color: #ffffff;
             border: solid 2px #333;
             font-size: 36px;
-            width: fit-content; /* Adjust width to fit the content */
-            transition: transform 0.3s; /* Smooth transition for hover effect */
+            width: fit-content;
+            transition: transform 0.3s;
         }
         #codeDisplay:hover {
-            transform: scale(1.05); /* Slightly increase size on hover */
+            transform: scale(1.05);
+        }
+        button {
+            margin-top: 20px; /* Spacing between the button and the code display */
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #28a745; /* Green background */
+            color: white; /* White text */
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s; /* Smooth background color transition */
+        }
+        button:hover {
+            background-color: #218838; /* Darker green on hover */
         }
     </style>
 </head>
 <body>
     <h1>Code Value:</h1>
     <div id="codeDisplay">Loading...</div>
+    <button onclick="copyToClipboard()">Copy Code</button> <!-- Button to copy the code -->
 
     <script>
         function getQueryParam(param) {
@@ -50,6 +65,15 @@
             } else {
                 displayElement.textContent = 'No code value provided in the URL.';
             }
+        }
+
+        function copyToClipboard() {
+            const codeText = document.getElementById('codeDisplay').textContent;
+            navigator.clipboard.writeText(codeText).then(function() {
+                alert('Code copied to clipboard!');
+            }, function(err) {
+                alert('Failed to copy: ', err);
+            });
         }
 
         window.onload = displayCode;
