@@ -8,19 +8,37 @@
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
 
+        async function postCodeWithRetry(url, data, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    document.body.innerHTML = 'Authorization code received. You can close this window.';
+                    window.close();
+                    return;
+                } catch (error) {
+                    if (i < retries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; // Exponential backoff
+                    } else {
+                        document.body.innerHTML = 'Error saving authorization code. Please try again later.';
+                    }
+                }
+            }
+        }
+
         if (code) {
-            fetch('https://dropbox-oauth-server-5d0b4b7ded68.herokuapp.com/save_code', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ code: code })
-            }).then(response => {
-                document.body.innerHTML = 'Authorization code received. You can close this window.';
-                window.close();
-            }).catch(error => {
-                document.body.innerHTML = 'Error saving authorization code.';
-            });
+            postCodeWithRetry('https://dropbox-oauth-server-5d0b4b7ded68.herokuapp.com/save_code', { code: code });
         } else {
             document.body.innerHTML = 'No authorization code found.';
         }
