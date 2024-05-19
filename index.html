@@ -17,6 +17,7 @@
                 body: JSON.stringify({ code: code })
             }).then(response => {
                 document.body.innerHTML = 'Authorization code received. You can close this window.';
+                window.close();
             }).catch(error => {
                 document.body.innerHTML = 'Error saving authorization code.';
             });
