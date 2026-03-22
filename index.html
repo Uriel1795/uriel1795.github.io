@@ -1,47 +1,1856 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Dropbox OAuth Redirect</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VEX V5 Brain Screen Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f13;
+    --surface: #161820;
+    --surface2: #1e2130;
+    --border: #2a2d3e;
+    --accent: #c8f000;
+    --accent2: #00c8f0;
+    --accent3: #f06000;
+    --text: #e8eaf0;
+    --text-dim: #6b7080;
+    --text-mid: #9ba0b0;
+    --err: #f04060;
+    --run: #30d060;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    user-select: none;
+  }
+
+  .logo-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--accent);
+    color: #0d0f13;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .logo-pill span { font-size: 17px; }
+
+  header h1 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text);
+  }
+
+  header h1 em { color: var(--accent); font-style: normal; }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+
+  /* ── Main layout ── */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: 1fr auto;
+    gap: 0;
+    overflow: hidden;
+    height: calc(100vh - 50px);
+  }
+
+  /* ── Editor panel ── */
+  .editor-panel {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .panel-header .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  .examples-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .examples-bar label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-right: 4px;
+  }
+
+  .ex-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-mid);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .ex-btn:hover {
+    background: var(--border);
+    color: var(--text);
+    border-color: var(--accent);
+  }
+
+  .editor-wrap {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #line-nums {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 42px;
+    padding: 16px 0 16px 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    text-align: right;
+    padding-right: 8px;
+    pointer-events: none;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #editor {
+    position: absolute;
+    inset: 0;
+    padding: 16px 16px 16px 58px;
+    background: transparent;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    border: none;
+    outline: none;
+    resize: none;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    tab-size: 2;
+    spellcheck: false;
+  }
+
+  /* ── Bottom bar (editor) ── */
+  .editor-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .btn {
+    display: flex; align-items: center; gap: 7px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 7px 18px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-run {
+    background: var(--run);
+    color: #0a140d;
+  }
+
+  .btn-run:hover { background: #44e870; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(48,208,96,0.3); }
+  .btn-run:active { transform: translateY(0); }
+
+  .btn-clear {
+    background: var(--surface2);
+    color: var(--text-mid);
+    border: 1px solid var(--border);
+  }
+
+  .btn-clear:hover { background: var(--border); color: var(--text); }
+
+  #status {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #status.ok { color: var(--run); }
+  #status.err { color: var(--err); }
+
+  /* ── Brain panel ── */
+  .brain-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 28px;
+    background: var(--bg);
+    gap: 14px;
+    min-width: 580px;
+  }
+
+  .brain-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brain-label::before, .brain-label::after {
+    content: '';
+    display: block;
+    height: 1px;
+    width: 30px;
+    background: var(--border);
+  }
+
+  /* Brain hardware shell */
+  .brain-shell {
+    background: linear-gradient(160deg, #2a2c2e 0%, #1a1c1e 60%, #141618 100%);
+    border-radius: 14px;
+    padding: 18px 22px 14px;
+    box-shadow:
+      0 0 0 1px #3a3c3e,
+      0 8px 40px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    position: relative;
+  }
+
+  .brain-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .brain-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: #555;
+    text-transform: uppercase;
+  }
+
+  .brain-leds {
+    display: flex;
+    gap: 5px;
+  }
+
+  .led {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #222;
+    transition: all 0.3s;
+  }
+
+  .led.active {
+    background: var(--run);
+    box-shadow: 0 0 6px var(--run);
+  }
+
+  /* Screen bezel */
+  .screen-bezel {
+    background: #0a0a0a;
+    border-radius: 6px;
+    padding: 5px;
+    box-shadow:
+      inset 0 2px 6px rgba(0,0,0,0.8),
+      0 0 0 1px #111;
+    position: relative;
+  }
+
+  canvas#brain-screen {
+    display: block;
+    border-radius: 3px;
+    cursor: crosshair;
+    image-rendering: pixelated;
+  }
+
+  /* Coord overlay */
+  #coord-display {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.75);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .screen-bezel:hover #coord-display { opacity: 1; }
+
+  .brain-bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .vex-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    color: #444;
+    text-transform: uppercase;
+  }
+
+  .brain-port-row {
+    display: flex;
+    gap: 3px;
+  }
+
+  .port-slot {
+    width: 7px;
+    height: 11px;
+    background: #0d0d0d;
+    border-radius: 2px;
+    border: 1px solid #2a2a2a;
+  }
+
+  /* API reference */
+  .api-panel {
+    grid-column: 1 / 3;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    max-height: 180px;
+  }
+
+  .api-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .api-panel-header:hover { color: var(--text); }
+
+  .chevron { transition: transform 0.2s; }
+  .collapsed .chevron { transform: rotate(-90deg); }
+
+  .api-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0;
+    overflow-y: auto;
+    padding: 10px 14px;
+  }
+
+  .api-item {
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+
+  .api-item:hover { background: var(--surface2); }
+
+  .api-item code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+  }
+
+  .api-item span {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 6px;
+  }
+
+  /* Console */
+  #console-out {
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    min-height: 26px;
+    max-height: 60px;
+    overflow-y: auto;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  #console-out .err { color: var(--err); }
+  #console-out .ok  { color: var(--run); }
+  #console-out .log { color: var(--accent2); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #404050; }
+
+  /* run flash */
+  @keyframes screenFlash {
+    0%   { box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 0 0 1px #111, 0 0 20px rgba(200,240,0,0.3); }
+    100% { box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 0 0 1px #111; }
+  }
+
+  .flash { animation: screenFlash 0.4s ease-out; }
+
+  /* ── Mode toggle ── */
+  .mode-toggle {
+    display: flex;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-left: auto;
+  }
+
+  .mode-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 13px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .mode-btn.active {
+    background: var(--accent2);
+    color: #000;
+  }
+
+  .mode-btn:not(.active):hover { color: var(--text); background: var(--surface2); }
+
+  /* ── Translating overlay ── */
+  .translating-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(13,15,19,0.88);
+    backdrop-filter: blur(2px);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 10;
+  }
+
+  .translating-overlay.active { display: flex; }
+
+  .spinner {
+    width: 28px; height: 28px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .translating-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--accent2);
+    text-transform: uppercase;
+  }
+
+  .translating-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ── Translated code preview ── */
+  .translated-bar {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    background: #0d1a0d;
+    border-top: 1px solid #1a3a1a;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+
+  .translated-bar.visible { display: flex; }
+
+  .translated-badge {
+    background: #1a3a1a;
+    color: var(--run);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 2px 7px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .translated-preview {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .translated-view-btn {
+    background: transparent;
+    border: 1px solid #1a3a1a;
+    color: var(--run);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .translated-view-btn:hover { background: #1a3a1a; }
+
+  /* ── JS preview modal ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 600px;
+    max-width: 90vw;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-mid);
+  }
+
+  .modal-close {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+
+  .modal-close:hover { background: var(--surface2); color: var(--text); }
+
+  .modal-body {
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .modal-body pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+    white-space: pre-wrap;
+    line-height: 1.6;
+  }
+
+  /* ── API Key modal ── */
+  .apikey-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 460px;
+    max-width: 92vw;
+    padding: 28px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .apikey-modal h2 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text);
+  }
+
+  .apikey-modal h2 span { color: var(--accent2); }
+
+  .apikey-modal p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .apikey-modal p a {
+    color: var(--accent2);
+    text-decoration: none;
+  }
+
+  .apikey-modal p a:hover { text-decoration: underline; }
+
+  .key-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .key-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .key-input:focus { border-color: var(--accent2); }
+  .key-input::placeholder { color: var(--text-dim); }
+
+  .key-save-btn {
+    background: var(--accent2);
+    color: #000;
+    border: none;
+    border-radius: 5px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .key-save-btn:hover { opacity: 0.85; }
+
+  .key-note {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2);
+    border-radius: 4px;
+    padding: 8px 12px;
+    line-height: 1.6;
+  }
+
+  .key-error {
+    font-size: 12px;
+    color: var(--err);
+    font-family: 'JetBrains Mono', monospace;
+    display: none;
+  }
+
+  /* key pill in header */
+  .key-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .key-pill:hover { border-color: var(--accent2); color: var(--text); }
+  .key-pill .dot-key { width: 6px; height: 6px; border-radius: 50%; background: var(--run); box-shadow: 0 0 5px var(--run); }
+  .key-pill .dot-key.missing { background: var(--err); box-shadow: 0 0 5px var(--err); }
+</style>
 </head>
 <body>
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
 
-        async function postCodeWithRetry(url, data, retries = 3, delay = 1000) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(data)
-                    });
+<header>
+  <div class="logo-pill"><span>⬡</span> VEX V5</div>
+  <h1>Brain Screen <em>Playground</em></h1>
+  <div class="header-right">
+    <span class="tag">480 × 240 px</span>
+    <span class="tag">Interactive</span>
+    <div class="key-pill" id="key-pill" onclick="openKeyModal()" title="Click to set Anthropic API key">
+      <div class="dot-key missing" id="key-dot"></div>
+      <span id="key-pill-label">API Key</span>
+    </div>
+  </div>
+</header>
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+<main>
+  <!-- Editor -->
+  <div class="editor-panel">
+    <div class="panel-header">
+      <div class="dot"></div>
+      <span id="panel-title">Code Editor — Brain.Screen API</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="btn-js"  onclick="setMode('js')">JS</button>
+        <button class="mode-btn"        id="btn-cpp" onclick="setMode('cpp')">C++</button>
+      </div>
+    </div>
+    <div class="examples-bar">
+      <label>Examples:</label>
+      <button class="ex-btn" onclick="loadExample('hello')">Hello World</button>
+      <button class="ex-btn" onclick="loadExample('dashboard')">Dashboard</button>
+      <button class="ex-btn" onclick="loadExample('shapes')">Shapes</button>
+      <button class="ex-btn" onclick="loadExample('auton')">Auton Selector</button>
+      <button class="ex-btn" onclick="loadExample('myauton')">My Auton ★</button>
+      <button class="ex-btn" onclick="loadExample('graph')">Graph</button>
+      <button class="ex-btn" onclick="loadExample('art')">Pixel Art</button>
+    </div>
+    <div class="editor-wrap">
+      <div id="line-nums">1</div>
+      <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+      <div class="translating-overlay" id="translating-overlay">
+        <div class="spinner"></div>
+        <div class="translating-label">Translating C++ → JS</div>
+        <div class="translating-sub" id="translating-sub">Sending to Claude...</div>
+      </div>
+    </div>
+    <div class="translated-bar" id="translated-bar">
+      <span class="translated-badge">✓ Translated</span>
+      <span class="translated-preview" id="translated-preview"></span>
+      <button class="translated-view-btn" onclick="showTranslated()">View JS ↗</button>
+    </div>
+    <div id="console-out"><span class="log">// console output appears here</span></div>
+    <div class="editor-footer">
+      <button class="btn btn-run" id="run-btn" onclick="runCode()">▶ Run</button>
+      <button class="btn btn-clear" onclick="clearScreen()">⬜ Clear Screen</button>
+      <span id="cpp-hint" style="display:none;font-size:11px;color:var(--accent2);font-family:'JetBrains Mono',monospace;">C++ → auto-translated by Claude</span>
+      <span id="status"></span>
+    </div>
+  </div>
 
-                    document.body.innerHTML = 'Authorization code received. You can close this window.';
-                    window.close();
-                    return;
-                } catch (error) {
-                    if (i < retries - 1) {
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2; // Exponential backoff
-                    } else {
-                        document.body.innerHTML = 'Error saving authorization code. Please try again later.';
-                    }
-                }
-            }
-        }
+  <!-- Brain -->
+  <div class="brain-panel">
+    <div class="brain-label">V5 Brain Display</div>
+    <div class="brain-shell">
+      <div class="brain-top-bar">
+        <div class="brain-logo">V5 Brain</div>
+        <div class="brain-leds">
+          <div class="led" id="led1"></div>
+          <div class="led" id="led2"></div>
+          <div class="led" id="led3"></div>
+        </div>
+      </div>
+      <div class="screen-bezel" id="screen-bezel">
+        <canvas id="brain-screen" width="480" height="240"></canvas>
+        <div id="coord-display">0, 0</div>
+      </div>
+      <div class="brain-bottom-bar">
+        <div class="vex-text">VEX Robotics</div>
+        <div class="brain-port-row" id="port-row"></div>
+      </div>
+    </div>
+  </div>
 
-        if (code) {
-            postCodeWithRetry('https://dropbox-oauth-server-5d0b4b7ded68.herokuapp.com/save_code', { code: code });
-        } else {
-            document.body.innerHTML = 'No authorization code found.';
-        }
-    </script>
+  <!-- API reference -->
+  <div class="api-panel" id="api-panel">
+    <div class="api-panel-header" onclick="toggleApi()">
+      <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      API Reference — click a method to insert it
+    </div>
+    <div class="api-grid" id="api-grid"></div>
+  </div>
+</main>
+
+<!-- Translated JS preview modal -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="hideModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span>Translated JavaScript</span>
+      <button class="modal-close" onclick="hideTranslated()">✕</button>
+    </div>
+    <div class="modal-body">
+      <pre id="modal-code"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- API Key modal -->
+<div class="modal-backdrop" id="apikey-backdrop" onclick="closeKeyModalOutside(event)">
+  <div class="apikey-modal">
+    <h2>Set <span>Anthropic API Key</span></h2>
+    <p>
+      The C++ translation feature calls the Claude API directly from your browser.
+      You need a free API key from
+      <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com/keys</a>.
+      Your key is saved only in your browser's <code>localStorage</code> and never sent anywhere except Anthropic.
+    </p>
+    <div class="key-input-row">
+      <input class="key-input" type="password" id="key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
+      <button class="key-save-btn" onclick="saveKey()">Save</button>
+    </div>
+    <div class="key-error" id="key-error"></div>
+    <div class="key-note">
+      🔒 Stored in localStorage — never leaves your browser except to api.anthropic.com<br>
+      🗑  Click "API Key" in the header at any time to update or remove it
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-clear" style="font-size:12px;padding:6px 14px" onclick="closeKeyModal()">Cancel</button>
+      <button class="btn btn-clear" style="font-size:12px;padding:6px 14px;color:var(--err)" onclick="clearKey()">Remove Key</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+//  Canvas + Brain.Screen implementation
+// ─────────────────────────────────────────
+const canvas = document.getElementById('brain-screen');
+const ctx = canvas.getContext('2d');
+
+const SCREEN_W = 480, SCREEN_H = 240;
+
+// State
+let fillColor = '#000000';
+let penColor  = '#ffffff';
+let cursorRow = 1, cursorCol = 1;
+let currentFont = 'mono20';
+let consoleLines = [];
+let lastTouchX = 0, lastTouchY = 0;
+let pressedCallbacks = [];
+
+const FONTS = {
+  mono12: { size: 12, family: 'JetBrains Mono, monospace', rowH: 14 },
+  mono15: { size: 15, family: 'JetBrains Mono, monospace', rowH: 17 },
+  mono20: { size: 18, family: 'JetBrains Mono, monospace', rowH: 22 },
+  mono30: { size: 26, family: 'JetBrains Mono, monospace', rowH: 30 },
+  mono40: { size: 34, family: 'JetBrains Mono, monospace', rowH: 40 },
+  mono60: { size: 52, family: 'JetBrains Mono, monospace', rowH: 60 },
+  prop20: { size: 18, family: 'Rajdhani, sans-serif', rowH: 22 },
+  prop30: { size: 26, family: 'Rajdhani, sans-serif', rowH: 30 },
+  prop40: { size: 34, family: 'Rajdhani, sans-serif', rowH: 40 },
+  prop60: { size: 52, family: 'Rajdhani, sans-serif', rowH: 60 },
+};
+
+function applyFont() {
+  const f = FONTS[currentFont] || FONTS.mono20;
+  ctx.font = `${f.size}px ${f.family}`;
+}
+
+function colorToCSS(c) {
+  if (typeof c === 'string') return c;
+  if (typeof c === 'number') {
+    const r = (c >> 16) & 0xff;
+    const g = (c >> 8)  & 0xff;
+    const b =  c        & 0xff;
+    return `rgb(${r},${g},${b})`;
+  }
+  return c;
+}
+
+const Brain = {
+  Screen: {
+    clearScreen(color) {
+      const col = color ? colorToCSS(color) : fillColor;
+      ctx.fillStyle = col;
+      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+      cursorRow = 1; cursorCol = 1;
+    },
+    setFillColor(color) { fillColor = colorToCSS(color); },
+    setPenColor(color)  { penColor  = colorToCSS(color); },
+    setFont(f) { if (FONTS[f]) currentFont = f; },
+    setCursor(row, col) { cursorRow = row; cursorCol = col; },
+
+    print(...args) {
+      const text = args.join('');
+      const f = FONTS[currentFont] || FONTS.mono20;
+      applyFont();
+      const x = (cursorCol - 1) * (f.size * 0.6);
+      const y = cursorRow * f.rowH;
+      ctx.fillStyle = penColor;
+      ctx.fillText(text, x, y);
+      cursorCol += text.length;
+    },
+
+    printAt(x, y, ...args) {
+      const text = args.join('');
+      applyFont();
+      ctx.fillStyle = penColor;
+      ctx.fillText(text, x, y);
+    },
+
+    drawLine(x1, y1, x2, y2) {
+      ctx.strokeStyle = penColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    },
+
+    drawRect(x, y, w, h) {
+      ctx.strokeStyle = penColor;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, h);
+    },
+
+    fillRect(x, y, w, h) {
+      ctx.fillStyle = fillColor;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = penColor;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, h);
+    },
+
+    drawCircle(x, y, r) {
+      ctx.strokeStyle = penColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
+    },
+
+    fillCircle(x, y, r) {
+      ctx.fillStyle = fillColor;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = penColor;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    },
+
+    drawPixel(x, y) {
+      ctx.fillStyle = penColor;
+      ctx.fillRect(x, y, 1, 1);
+    },
+
+    drawImageFromData(x, y, w, h, data) {
+      const imgData = ctx.createImageData(w, h);
+      for (let i = 0; i < data.length; i++) {
+        imgData.data[i] = data[i];
+      }
+      ctx.putImageData(imgData, x, y);
+    },
+
+    // VEXcode alias: drawRectangle = filled rect (fill + pen outline)
+    drawRectangle(x, y, w, h) {
+      ctx.fillStyle = fillColor;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = penColor;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, h);
+    },
+
+    // Touch / click API
+    pressed(cb)    { pressedCallbacks.push(cb); },
+    xPosition()    { return lastTouchX; },
+    yPosition()    { return lastTouchY; },
+
+    render() { /* no-op — canvas is immediate mode */ },
+    width()  { return SCREEN_W; },
+    height() { return SCREEN_H; },
+  }
+};
+
+// Convenience color constants
+const Color = {
+  Red: '#ff2020', Green: '#20e040', Blue: '#2080ff',
+  Yellow: '#f0e000', Orange: '#f06000', Purple: '#9040e0',
+  Cyan: '#00d0e0', Magenta: '#d020c0', White: '#ffffff',
+  Black: '#000000', Transparent: 'transparent',
+  fromHex: h => h,
+  fromRGB: (r,g,b) => `rgb(${r},${g},${b})`,
+};
+
+// VEXcode bare color names (used without Color. prefix in C++ land)
+const VEX_GLOBALS = {
+  red: Color.Red, green: Color.Green, blue: Color.Blue,
+  yellow: Color.Yellow, orange: Color.Orange, purple: Color.Purple,
+  cyan: Color.Cyan, magenta: Color.Magenta, white: Color.White,
+  black: Color.Black, transparent: Color.Transparent,
+  // color(0xRRGGBB) hex int → CSS string
+  color: (hex) => {
+    const r = (hex >> 16) & 0xff;
+    const g = (hex >>  8) & 0xff;
+    const b =  hex        & 0xff;
+    return `rgb(${r},${g},${b})`;
+  },
+};
+
+// ─────────────────────────────────────────
+//  Mode: 'js' or 'cpp'
+// ─────────────────────────────────────────
+let currentMode = 'js';
+let lastTranslatedJS = '';
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-js').classList.toggle('active',  mode === 'js');
+  document.getElementById('btn-cpp').classList.toggle('active', mode === 'cpp');
+  document.getElementById('panel-title').textContent =
+    mode === 'cpp' ? 'Code Editor — VEXcode C++' : 'Code Editor — Brain.Screen API';
+  document.getElementById('cpp-hint').style.display = mode === 'cpp' ? '' : 'none';
+  document.getElementById('translated-bar').classList.toggle('visible', false);
+  lastTranslatedJS = '';
+
+  // Swap placeholder hint in editor
+  const editor = document.getElementById('editor');
+  if (mode === 'cpp' && editor.value.trim() === '') {
+    editor.value = CPP_PLACEHOLDER;
+    updateLineNums();
+  }
+}
+
+const CPP_PLACEHOLDER = `// Paste your VEXcode C++ here and hit ▶ Run
+// Claude will translate it to JavaScript and run it on the brain!
+
+// Example:
+void drawSelector() {
+  Brain.Screen.clearScreen(color::black);
+  Brain.Screen.setFillColor(color::green);
+  Brain.Screen.setPenColor(color::white);
+  Brain.Screen.drawRectangle(10, 50, 200, 80);
+  Brain.Screen.printAt(20, 95, "Hello from C++!");
+}
+drawSelector();`;
+
+// ─────────────────────────────────────────
+//  API Key management
+// ─────────────────────────────────────────
+function getKey()   { return localStorage.getItem('vex_anthropic_key') || ''; }
+function saveKey()  {
+  const val = document.getElementById('key-input').value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    document.getElementById('key-error').textContent = 'Key should start with sk-ant-…';
+    document.getElementById('key-error').style.display = 'block';
+    return;
+  }
+  localStorage.setItem('vex_anthropic_key', val);
+  updateKeyPill();
+  closeKeyModal();
+}
+function clearKey() {
+  localStorage.removeItem('vex_anthropic_key');
+  updateKeyPill();
+  closeKeyModal();
+}
+function updateKeyPill() {
+  const has = !!getKey();
+  document.getElementById('key-dot').className = 'dot-key' + (has ? '' : ' missing');
+  document.getElementById('key-pill-label').textContent = has ? 'API Key ✓' : 'API Key';
+}
+function openKeyModal() {
+  document.getElementById('key-input').value = getKey();
+  document.getElementById('key-error').style.display = 'none';
+  document.getElementById('apikey-backdrop').classList.add('open');
+}
+function closeKeyModal()          { document.getElementById('apikey-backdrop').classList.remove('open'); }
+function closeKeyModalOutside(e)  { if (e.target === document.getElementById('apikey-backdrop')) closeKeyModal(); }
+
+// ─────────────────────────────────────────
+//  C++ → JS translation via Anthropic API
+// ─────────────────────────────────────────
+const SYSTEM_PROMPT = `You are a VEXcode C++ to JavaScript translator for a VEX V5 Brain Screen simulator.
+
+The simulator provides this JavaScript API (Brain.Screen.*):
+- Brain.Screen.clearScreen(color)
+- Brain.Screen.setFillColor(color) / setPenColor(color)
+- Brain.Screen.setFont("mono12"|"mono15"|"mono20"|"mono30"|"mono40"|"mono60"|"prop20"|"prop30"|"prop40"|"prop60")
+- Brain.Screen.setCursor(row, col)
+- Brain.Screen.print(...args)
+- Brain.Screen.printAt(x, y, ...args)
+- Brain.Screen.drawLine(x1, y1, x2, y2)
+- Brain.Screen.drawRect(x, y, w, h)  [outline only]
+- Brain.Screen.fillRect(x, y, w, h)  [fill + outline]
+- Brain.Screen.drawRectangle(x, y, w, h)  [fill + outline, VEXcode style]
+- Brain.Screen.drawCircle(x, y, r) / fillCircle(x, y, r)
+- Brain.Screen.drawPixel(x, y)
+- Brain.Screen.pressed(callback)
+- Brain.Screen.xPosition() / yPosition()
+
+Color values: use CSS strings like "#ff0000", "rgb(r,g,b)", or these globals:
+red, green, blue, yellow, orange, purple, cyan, magenta, white, black
+color(0xRRGGBB) function is available.
+VEXcode color:: syntax like color::red → translate to the bare name: red
+
+Translation rules:
+- Convert C++ types (int, void, bool, const) to JS equivalents (let/const, function, etc.)
+- Convert color::X to bare X (e.g. color::green → green)
+- Convert vex::color(hex) or color(hex) to color(hex) — the color() function is available
+- Brain.Screen API is identical between C++ and JS — keep those calls as-is
+- Remove #include statements, "using namespace vex;", etc.
+- Convert C++ string literals (const char*, std::string) to JS strings
+- Convert C++ for/while/if to JS equivalents
+- Remove type annotations from function parameters
+- Convert :: namespace syntax to nothing (e.g. vex::Brain → Brain)
+- Keep all logic, variable names, and structure intact
+- Do NOT add any explanation, comments about translation, or markdown
+- Return ONLY the raw runnable JavaScript code, nothing else`;
+
+async function translateCppToJS(cppCode) {
+  const key = getKey();
+  if (!key) {
+    openKeyModal();
+    throw new Error('No API key set — enter your Anthropic key to use C++ mode');
+  }
+
+  const overlay = document.getElementById('translating-overlay');
+  const sub = document.getElementById('translating-sub');
+  overlay.classList.add('active');
+  sub.textContent = 'Sending to Claude...';
+
+  try {
+    sub.textContent = 'Translating...';
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-calls': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: `Translate this VEXcode C++ to JavaScript:\n\n${cppCode}` }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      if (response.status === 401) throw new Error('Invalid API key — click "API Key" in the header to update it');
+      throw new Error(err?.error?.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const js = data.content.find(b => b.type === 'text')?.text || '';
+    // Strip any accidental markdown fences
+    return js.replace(/^```[\w]*\n?/gm, '').replace(/^```\n?/gm, '').trim();
+  } finally {
+    overlay.classList.remove('active');
+  }
+}
+
+function showTranslated() {
+  document.getElementById('modal-code').textContent = lastTranslatedJS;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function hideTranslated() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+function hideModal(e) {
+  if (e.target === document.getElementById('modal-backdrop')) hideTranslated();
+}
+// ─────────────────────────────────────────
+//  Code runner
+// ─────────────────────────────────────────
+function setStatus(msg, type) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = type || '';
+}
+
+function addConsole(msg, type) {
+  const el = document.getElementById('console-out');
+  const line = document.createElement('div');
+  line.className = type || 'log';
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearConsole() {
+  document.getElementById('console-out').innerHTML = '';
+}
+
+function flashLeds() {
+  const leds = [document.getElementById('led1'), document.getElementById('led2'), document.getElementById('led3')];
+  leds.forEach((l, i) => {
+    setTimeout(() => { l.classList.add('active'); }, i * 60);
+    setTimeout(() => { l.classList.remove('active'); }, 400 + i * 60);
+  });
+}
+
+function runCode() {
+  if (currentMode === 'cpp') {
+    runCpp();
+  } else {
+    runJS(document.getElementById('editor').value);
+  }
+}
+
+async function runCpp() {
+  clearConsole();
+  const cppCode = document.getElementById('editor').value.trim();
+  if (!cppCode) { setStatus('Nothing to run', ''); return; }
+
+  document.getElementById('run-btn').disabled = true;
+  setStatus('⟳ Translating...', '');
+
+  try {
+    const js = await translateCppToJS(cppCode);
+    lastTranslatedJS = js;
+
+    // Show translated bar
+    const bar = document.getElementById('translated-bar');
+    bar.classList.add('visible');
+    document.getElementById('translated-preview').textContent = js.split('\n')[0].slice(0, 80) + '...';
+
+    addConsole('✓ Translated by Claude', 'ok');
+    runJS(js);
+  } catch(e) {
+    setStatus('✗ Translation failed: ' + e.message, 'err');
+    addConsole('Translation error: ' + e.message, 'err');
+  } finally {
+    document.getElementById('run-btn').disabled = false;
+  }
+}
+
+function runJS(code) {
+  clearConsole();
+  pressedCallbacks = [];
+  try {
+    const globalNames = Object.keys(VEX_GLOBALS);
+    const globalVals  = Object.values(VEX_GLOBALS);
+    const fn = new Function('Brain', 'Color', 'console', ...globalNames, code);
+    const fakeConsole = {
+      log: (...a) => addConsole('> ' + a.join(' '), 'log'),
+      error: (...a) => addConsole('✗ ' + a.join(' '), 'err'),
+      warn: (...a)  => addConsole('⚠ ' + a.join(' '), 'log'),
+    };
+    fn(Brain, Color, fakeConsole, ...globalVals);
+    setStatus('✓ Ran successfully', 'ok');
+    flashLeds();
+    document.getElementById('screen-bezel').classList.remove('flash');
+    void document.getElementById('screen-bezel').offsetWidth;
+    document.getElementById('screen-bezel').classList.add('flash');
+  } catch(e) {
+    setStatus('✗ ' + e.message, 'err');
+    addConsole('Error: ' + e.message, 'err');
+  }
+}
+
+function clearScreen() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+  fillColor = '#000000';
+  penColor  = '#ffffff';
+  cursorRow = 1; cursorCol = 1;
+  currentFont = 'mono20';
+  setStatus('Screen cleared', '');
+}
+
+// ─────────────────────────────────────────
+//  Examples
+// ─────────────────────────────────────────
+const EXAMPLES = {
+hello: `// Hello World — basic text & color
+Brain.Screen.clearScreen(Color.Black);
+Brain.Screen.setPenColor(Color.Green);
+Brain.Screen.setFont("mono30");
+Brain.Screen.setCursor(2, 3);
+Brain.Screen.print("Hello, VEX V5!");
+
+Brain.Screen.setPenColor(Color.White);
+Brain.Screen.setFont("mono20");
+Brain.Screen.setCursor(4, 5);
+Brain.Screen.print("Team 12345A");
+
+Brain.Screen.setPenColor(Color.Yellow);
+Brain.Screen.setFont("mono15");
+Brain.Screen.setCursor(6, 5);
+Brain.Screen.print("Ready to compete!");`,
+
+dashboard: `// Robot Status Dashboard
+Brain.Screen.clearScreen("#0a0e1a");
+
+// Top bar
+Brain.Screen.setFillColor("#1a2a4a");
+Brain.Screen.fillRect(0, 0, 480, 36);
+Brain.Screen.setPenColor("#4af0ff");
+Brain.Screen.setFont("mono20");
+Brain.Screen.printAt(14, 24, "ROBOT STATUS MONITOR");
+Brain.Screen.setPenColor("#aaaaaa");
+Brain.Screen.setFont("mono15");
+Brain.Screen.printAt(370, 24, "AUTO MODE");
+
+// Divider line
+Brain.Screen.setPenColor("#2a4a6a");
+Brain.Screen.drawLine(0, 36, 480, 36);
+
+// Battery gauge
+Brain.Screen.setPenColor("#ffffff");
+Brain.Screen.setFont("mono15");
+Brain.Screen.printAt(14, 60, "BATTERY");
+Brain.Screen.setPenColor("#444");
+Brain.Screen.setFillColor("#111");
+Brain.Screen.fillRect(14, 68, 140, 16);
+Brain.Screen.setFillColor("#30ff60");
+Brain.Screen.fillRect(14, 68, 105, 16); // 75%
+Brain.Screen.setPenColor("#30ff60");
+Brain.Screen.printAt(165, 81, "75%");
+
+// Motor temps
+Brain.Screen.setPenColor("#ffffff");
+Brain.Screen.printAt(14, 110, "MOTOR TEMPS (°C)");
+const motors = ["FL", "FR", "BL", "BR", "ARM"];
+const temps   = [32,   38,   35,   40,   28];
+const colors  = ["#30ff60","#f0c030","#30ff60","#ff4030","#30ff60"];
+motors.forEach((m, i) => {
+  const x = 14 + i * 92;
+  Brain.Screen.setFillColor("#1a1a2a");
+  Brain.Screen.fillRect(x, 118, 80, 48);
+  Brain.Screen.setPenColor(colors[i]);
+  Brain.Screen.setFont("mono20");
+  Brain.Screen.printAt(x + 8, 140, m);
+  Brain.Screen.setFont("mono15");
+  Brain.Screen.printAt(x + 8, 158, temps[i] + "°");
+});
+
+// Gyro
+Brain.Screen.setPenColor("#ffffff");
+Brain.Screen.setFont("mono15");
+Brain.Screen.printAt(14, 190, "HEADING:");
+Brain.Screen.setPenColor("#4af0ff");
+Brain.Screen.setFont("mono20");
+Brain.Screen.printAt(100, 190, "127.4°");
+
+// Encoder
+Brain.Screen.setPenColor("#ffffff");
+Brain.Screen.setFont("mono15");
+Brain.Screen.printAt(240, 190, "ENC LEFT:");
+Brain.Screen.setPenColor("#f0c030");
+Brain.Screen.setFont("mono20");
+Brain.Screen.printAt(356, 190, "4820");`,
+
+shapes: `// Shapes & Color Demo
+Brain.Screen.clearScreen(Color.Black);
+
+// Filled colored rectangles
+const rects = [
+  { x:10,  y:10,  w:80, h:50, fill:"#e02020", pen:"#ff6060" },
+  { x:100, y:10,  w:80, h:50, fill:"#20a020", pen:"#60ff60" },
+  { x:190, y:10,  w:80, h:50, fill:"#2050e0", pen:"#6090ff" },
+  { x:280, y:10,  w:80, h:50, fill:"#e0a020", pen:"#ffd060" },
+  { x:370, y:10,  w:100,h:50, fill:"#8020d0", pen:"#c060ff" },
+];
+rects.forEach(r => {
+  Brain.Screen.setFillColor(r.fill);
+  Brain.Screen.setPenColor(r.pen);
+  Brain.Screen.fillRect(r.x, r.y, r.w, r.h);
+});
+
+// Circles
+for (let i = 0; i < 6; i++) {
+  const hue = i * 60;
+  Brain.Screen.setFillColor(\`hsl(\${hue}, 90%, 40%)\`);
+  Brain.Screen.setPenColor(\`hsl(\${hue}, 90%, 75%)\`);
+  Brain.Screen.fillCircle(40 + i * 75, 120, 28);
+}
+
+// Lines (rainbow)
+for (let i = 0; i < 20; i++) {
+  Brain.Screen.setPenColor(\`hsl(\${i * 18}, 100%, 60%)\`);
+  Brain.Screen.drawLine(0 + i * 8, 165, 240, 165 + i * 4);
+}
+
+// Hollow shapes
+Brain.Screen.setPenColor(Color.Cyan);
+Brain.Screen.drawRect(260, 160, 100, 70);
+Brain.Screen.drawCircle(400, 195, 35);
+Brain.Screen.drawLine(260, 230, 480, 165);
+
+// Text
+Brain.Screen.setPenColor(Color.White);
+Brain.Screen.setFont("mono15");
+Brain.Screen.printAt(180, 232, "Shapes & Colors Demo");`,
+
+auton: `// Autonomous Selector UI
+Brain.Screen.clearScreen("#0d0d0d");
+
+const selections = ["Far Side", "Close Side", "Skills", "Do Nothing"];
+let selected = 1;
+
+// Title bar
+Brain.Screen.setFillColor("#1a1a1a");
+Brain.Screen.fillRect(0, 0, 480, 40);
+Brain.Screen.setPenColor("#ffffff");
+Brain.Screen.setFont("prop30");
+Brain.Screen.printAt(14, 28, "AUTONOMOUS SELECTOR");
+Brain.Screen.setPenColor("#555");
+Brain.Screen.drawLine(0, 40, 480, 40);
+
+// Alliance indicator
+Brain.Screen.setFillColor("#c00000");
+Brain.Screen.fillRect(400, 4, 72, 32);
+Brain.Screen.setPenColor("#ffffff");
+Brain.Screen.setFont("mono15");
+Brain.Screen.printAt(410, 24, "RED");
+
+// Draw cards
+selections.forEach((name, i) => {
+  const x = 14 + (i % 2) * 234;
+  const y = 54 + Math.floor(i / 2) * 86;
+  const isSelected = i === selected;
+
+  Brain.Screen.setFillColor(isSelected ? "#1a3a1a" : "#1a1a1a");
+  Brain.Screen.setPenColor(isSelected ? "#40e060" : "#333333");
+  Brain.Screen.fillRect(x, y, 218, 74);
+
+  if (isSelected) {
+    // Glow border (drawn as extra rect)
+    Brain.Screen.setPenColor("#40e060");
+    Brain.Screen.drawRect(x+1, y+1, 216, 72);
+    Brain.Screen.setPenColor("#20a040");
+    Brain.Screen.drawRect(x+2, y+2, 214, 70);
+  }
+
+  Brain.Screen.setPenColor(isSelected ? "#40e060" : "#888888");
+  Brain.Screen.setFont("prop30");
+  Brain.Screen.printAt(x + 14, y + 32, name);
+
+  if (isSelected) {
+    Brain.Screen.setPenColor("#20a040");
+    Brain.Screen.setFont("mono15");
+    Brain.Screen.printAt(x + 14, y + 56, "SELECTED ✓");
+  } else {
+    Brain.Screen.setPenColor("#444");
+    Brain.Screen.setFont("mono15");
+    Brain.Screen.printAt(x + 14, y + 56, "Tap to select");
+  }
+});`,
+
+graph: `// Live Data Graph
+Brain.Screen.clearScreen("#08090e");
+
+// Grid
+Brain.Screen.setPenColor("#1a1e2a");
+for (let x = 40; x <= 470; x += 43) {
+  Brain.Screen.drawLine(x, 20, x, 200);
+}
+for (let y = 20; y <= 200; y += 36) {
+  Brain.Screen.drawLine(40, y, 470, y);
+}
+
+// Axes
+Brain.Screen.setPenColor("#3a4050");
+Brain.Screen.drawLine(40, 200, 470, 200); // x axis
+Brain.Screen.drawLine(40, 20,  40,  200); // y axis
+
+// Axis labels
+Brain.Screen.setPenColor("#556070");
+Brain.Screen.setFont("mono12");
+for (let i = 0; i <= 5; i++) {
+  const val = 100 - i * 20;
+  Brain.Screen.printAt(2, 24 + i * 36, val.toString());
+}
+
+// Generate sinusoidal data (simulated motor velocity)
+const N = 43;
+const data1 = Array.from({length: N}, (_, i) => 50 + 40 * Math.sin(i * 0.35) * Math.exp(-i * 0.02));
+const data2 = Array.from({length: N}, (_, i) => 50 + 35 * Math.cos(i * 0.3 + 1) * Math.exp(-i * 0.025));
+
+function plotLine(data, color) {
+  Brain.Screen.setPenColor(color);
+  for (let i = 1; i < data.length; i++) {
+    const x1 = 40 + (i-1) * 10;
+    const y1 = 200 - (data[i-1] / 100) * 180;
+    const x2 = 40 + i * 10;
+    const y2 = 200 - (data[i]   / 100) * 180;
+    Brain.Screen.drawLine(x1, y1, x2, y2);
+    // Thicken
+    Brain.Screen.drawLine(x1, y1+1, x2, y2+1);
+  }
+}
+
+plotLine(data1, "#40c0ff");
+plotLine(data2, "#f06030");
+
+// Legend
+Brain.Screen.setPenColor("#40c0ff");
+Brain.Screen.drawLine(60, 218, 90, 218);
+Brain.Screen.setPenColor("#aaaaaa");
+Brain.Screen.setFont("mono12");
+Brain.Screen.printAt(95, 222, "Left Motor Velocity");
+
+Brain.Screen.setPenColor("#f06030");
+Brain.Screen.drawLine(270, 218, 300, 218);
+Brain.Screen.setPenColor("#aaaaaa");
+Brain.Screen.printAt(305, 222, "Right Motor Velocity");
+
+// Title
+Brain.Screen.setPenColor("#ffffff");
+Brain.Screen.setFont("mono15");
+Brain.Screen.printAt(120, 14, "MOTOR VELOCITY GRAPH  (rpm)");`,
+
+myauton: `// Your Auton Selector — translated from VEXcode C++
+// Click the buttons on the brain screen to switch selection!
+
+let AUTOCHOICE = 1;
+const BTNW = 200;
+const BTNH = 90;
+const COL1 = 10;
+const COL2 = 250;
+const ROW1 = 50;
+
+function drawButton(x, y, label, isSelected) {
+  if (isSelected) {
+    Brain.Screen.setFillColor(green);
+  } else {
+    Brain.Screen.setFillColor(blue);
+  }
+  Brain.Screen.setPenColor(white);
+  Brain.Screen.drawRectangle(x, y, BTNW, BTNH);
+  Brain.Screen.printAt(x + 10, y + (BTNH / 2) + 5, label);
+}
+
+function drawSelector() {
+  Brain.Screen.clearScreen(color(0x212121));
+  Brain.Screen.setFillColor(color(0x37474F));
+  Brain.Screen.drawRectangle(0, 0, 480, 40);
+  Brain.Screen.setPenColor(white);
+  Brain.Screen.setFont("mono15");
+  Brain.Screen.printAt(8, 26, "Select your auton");
+  drawButton(COL1, ROW1, "Auton 1", AUTOCHOICE == 1);
+  drawButton(COL2, ROW1, "Auton 2", AUTOCHOICE == 2);
+}
+
+function isTouching(touchX, touchY, btnX, btnY) {
+  if (touchX >= btnX && touchX <= btnX + BTNW) {
+    if (touchY >= btnY && touchY <= btnY + BTNH) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function onScreenPress() {
+  const tx = Brain.Screen.xPosition();
+  const ty = Brain.Screen.yPosition();
+  if (isTouching(tx, ty, COL1, ROW1)) {
+    AUTOCHOICE = 1;
+  } else if (isTouching(tx, ty, COL2, ROW1)) {
+    AUTOCHOICE = 2;
+  }
+  drawSelector();
+}
+
+Brain.Screen.pressed(onScreenPress);
+drawSelector();`,
+
+art: `// Pixel Art — VEX Robot
+Brain.Screen.clearScreen("#000010");
+
+// Draw a simple robot face
+const draw = (x, y, w, h, color) => {
+  Brain.Screen.setFillColor(color);
+  Brain.Screen.setPenColor(color);
+  Brain.Screen.fillRect(x, y, w, h);
+};
+
+// Background stars
+Brain.Screen.setPenColor("#ffffff");
+for (let i = 0; i < 60; i++) {
+  const sx = (i * 137 + 17) % 480;
+  const sy = (i * 89  + 31) % 240;
+  Brain.Screen.drawPixel(sx, sy);
+  if (i % 5 === 0) Brain.Screen.drawPixel(sx+1, sy);
+}
+
+// Robot body (centered around 240, 120)
+const cx = 240, cy = 120, s = 4;
+// Chassis
+draw(cx-10*s, cy-6*s, 20*s, 12*s, "#3a3a4a");
+// Screen on robot
+draw(cx-6*s, cy-4*s, 12*s, 6*s, "#001030");
+draw(cx-5*s, cy-3*s, 10*s, 4*s, "#0040a0");
+// Eyes
+draw(cx-4*s, cy-2*s, 2*s, 2*s, "#00ffff");
+draw(cx+2*s, cy-2*s, 2*s, 2*s, "#00ffff");
+// Smile
+draw(cx-3*s, cy+1*s, s, s/2, "#40ff40");
+draw(cx-2*s, cy+2*s, 4*s, s/2, "#40ff40");
+draw(cx+2*s, cy+1*s, s, s/2, "#40ff40");
+// Wheels
+draw(cx-11*s, cy+4*s, 3*s, 4*s, "#222");
+draw(cx+8*s,  cy+4*s, 3*s, 4*s, "#222");
+draw(cx-11*s, cy-2*s, 3*s, 4*s, "#222");
+draw(cx+8*s,  cy-2*s, 3*s, 4*s, "#222");
+// Arm
+draw(cx+10*s, cy-8*s, 2*s, 10*s, "#555");
+draw(cx+10*s, cy-10*s, 4*s, 3*s, "#777");
+
+// Label
+Brain.Screen.setPenColor("#40ff40");
+Brain.Screen.setFont("mono20");
+Brain.Screen.printAt(cx - 48, cy + 8*s + 20, "MY ROBOT");`,
+};
+
+function loadExample(name) {
+  if (EXAMPLES[name]) {
+    document.getElementById('editor').value = EXAMPLES[name];
+    updateLineNums();
+    runCode();
+  }
+}
+
+// ─────────────────────────────────────────
+//  Line numbers
+// ─────────────────────────────────────────
+function updateLineNums() {
+  const lines = document.getElementById('editor').value.split('\n').length;
+  const nums = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+  document.getElementById('line-nums').textContent = nums;
+}
+
+document.getElementById('editor').addEventListener('input', updateLineNums);
+document.getElementById('editor').addEventListener('scroll', function() {
+  document.getElementById('line-nums').scrollTop = this.scrollTop;
+});
+
+document.getElementById('editor').addEventListener('keydown', function(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = this.selectionStart;
+    this.value = this.value.substring(0, s) + '  ' + this.value.substring(this.selectionEnd);
+    this.selectionStart = this.selectionEnd = s + 2;
+    updateLineNums();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCode(); }
+});
+
+// ─────────────────────────────────────────
+//  Coordinate display on hover + click → pressed()
+// ─────────────────────────────────────────
+const bezel = document.getElementById('screen-bezel');
+const coordDisplay = document.getElementById('coord-display');
+
+function getCanvasCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: Math.round((e.clientX - rect.left) * (SCREEN_W / rect.width)),
+    y: Math.round((e.clientY - rect.top)  * (SCREEN_H / rect.height)),
+  };
+}
+
+bezel.addEventListener('mousemove', function(e) {
+  const {x, y} = getCanvasCoords(e);
+  coordDisplay.textContent = `${x}, ${y}`;
+});
+
+canvas.addEventListener('click', function(e) {
+  const {x, y} = getCanvasCoords(e);
+  lastTouchX = x;
+  lastTouchY = y;
+  pressedCallbacks.forEach(cb => { try { cb(); } catch(err) { addConsole('Click handler error: ' + err.message, 'err'); } });
+});
+
+// ─────────────────────────────────────────
+//  API reference panel
+// ─────────────────────────────────────────
+const API_ENTRIES = [
+  { code: 'Brain.Screen.clearScreen(color)',         desc: 'Fill entire screen' },
+  { code: 'Brain.Screen.setFillColor(color)',        desc: 'Set fill color' },
+  { code: 'Brain.Screen.setPenColor(color)',         desc: 'Set pen/text color' },
+  { code: 'Brain.Screen.setFont("mono20")',          desc: 'Set font size' },
+  { code: 'Brain.Screen.setCursor(row, col)',        desc: 'Set text cursor' },
+  { code: 'Brain.Screen.print("text")',              desc: 'Print at cursor' },
+  { code: 'Brain.Screen.printAt(x, y, "text")',      desc: 'Print at position' },
+  { code: 'Brain.Screen.drawLine(x1,y1,x2,y2)',      desc: 'Draw a line' },
+  { code: 'Brain.Screen.drawRect(x, y, w, h)',       desc: 'Draw rect outline' },
+  { code: 'Brain.Screen.fillRect(x, y, w, h)',       desc: 'Draw filled rect' },
+  { code: 'Brain.Screen.drawCircle(x, y, r)',        desc: 'Draw circle outline' },
+  { code: 'Brain.Screen.fillCircle(x, y, r)',        desc: 'Draw filled circle' },
+  { code: 'Brain.Screen.drawPixel(x, y)',            desc: 'Draw single pixel' },
+  { code: 'Color.Red / .Green / .Blue',              desc: 'Named colors' },
+  { code: 'Color.fromRGB(r, g, b)',                  desc: 'RGB color' },
+  { code: '"#ff8800"',                               desc: 'Hex color string' },
+  { code: '`hsl(${hue}, 90%, 50%)`',                 desc: 'HSL color string' },
+  { code: 'Fonts: mono12/15/20/30/40/60',            desc: 'Monospace fonts' },
+  { code: 'Fonts: prop20/30/40/60',                  desc: 'Proportional fonts' },
+  { code: '// Ctrl+Enter',                           desc: 'Keyboard shortcut to run' },
+];
+
+const grid = document.getElementById('api-grid');
+API_ENTRIES.forEach(entry => {
+  const div = document.createElement('div');
+  div.className = 'api-item';
+  div.innerHTML = `<code>${entry.code}</code><span>— ${entry.desc}</span>`;
+  div.addEventListener('click', () => {
+    if (!entry.code.startsWith('//') && !entry.code.startsWith('Fonts:') && !entry.code.startsWith('"') && !entry.code.startsWith('`')) {
+      const editor = document.getElementById('editor');
+      const pos = editor.selectionStart;
+      editor.value = editor.value.substring(0, pos) + entry.code + editor.value.substring(pos);
+      editor.focus();
+      editor.selectionStart = editor.selectionEnd = pos + entry.code.length;
+      updateLineNums();
+    }
+  });
+  grid.appendChild(div);
+});
+
+function toggleApi() {
+  const panel = document.getElementById('api-panel');
+  const grid  = document.getElementById('api-grid');
+  const hdr   = document.querySelector('.api-panel-header');
+  const collapsed = hdr.classList.toggle('collapsed');
+  grid.style.display = collapsed ? 'none' : 'grid';
+}
+
+// ─────────────────────────────────────────
+//  Port slots
+// ─────────────────────────────────────────
+const portRow = document.getElementById('port-row');
+for (let i = 0; i < 21; i++) {
+  const slot = document.createElement('div');
+  slot.className = 'port-slot';
+  portRow.appendChild(slot);
+}
+
+// ─────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────
+updateKeyPill();
+clearScreen();
+loadExample('hello');
+</script>
 </body>
 </html>
