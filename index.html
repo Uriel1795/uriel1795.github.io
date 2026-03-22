@@ -822,10 +822,10 @@
   <div class="editor-panel">
     <div class="panel-header">
       <div class="dot"></div>
-      <span id="panel-title">Code Editor — Brain.Screen API</span>
+      <span id="panel-title">Code Editor — VEXcode C++</span>
       <div class="mode-toggle">
-        <button class="mode-btn active" id="btn-js"  onclick="setMode('js')">JS</button>
-        <button class="mode-btn"        id="btn-cpp" onclick="setMode('cpp')">C++</button>
+        <button class="mode-btn active" id="btn-cpp" onclick="setMode('cpp')">C++</button>
+        <button class="mode-btn"        id="btn-py"  onclick="setMode('py')">Python</button>
       </div>
     </div>
     <div class="examples-bar">
@@ -834,16 +834,13 @@
       <button class="ex-btn" onclick="loadExample('dashboard')">Dashboard</button>
       <button class="ex-btn" onclick="loadExample('shapes')">Shapes</button>
       <button class="ex-btn" onclick="loadExample('auton')">Auton Selector</button>
-      <button class="ex-btn" onclick="loadExample('myauton')">My Auton ★</button>
-      <button class="ex-btn" onclick="loadExample('graph')">Graph</button>
-      <button class="ex-btn" onclick="loadExample('art')">Pixel Art</button>
     </div>
     <div class="editor-wrap">
       <div id="line-nums">1</div>
       <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
       <div class="translating-overlay" id="translating-overlay">
         <div class="spinner"></div>
-        <div class="translating-label">Translating C++ → JS</div>
+        <div class="translating-label" id="translating-label">Translating → JS</div>
         <div class="translating-sub" id="translating-sub">Sending to Claude...</div>
       </div>
     </div>
@@ -856,7 +853,7 @@
     <div class="editor-footer">
       <button class="btn btn-run" id="run-btn" onclick="runCode()">▶ Run</button>
       <button class="btn btn-clear" onclick="clearScreen()">⬜ Clear Screen</button>
-      <span id="cpp-hint" style="display:none;font-size:11px;color:var(--accent2);font-family:'JetBrains Mono',monospace;">C++ → auto-translated by Claude</span>
+      <span id="lang-hint" style="display:none;font-size:11px;color:var(--accent2);font-family:'JetBrains Mono',monospace;">auto-translated by Claude</span>
       <span id="status"></span>
     </div>
   </div>
@@ -1113,33 +1110,36 @@ const VEX_GLOBALS = {
 };
 
 // ─────────────────────────────────────────
-//  Mode: 'js' or 'cpp'
+//  Mode: 'cpp' or 'py'
 // ─────────────────────────────────────────
-let currentMode = 'js';
+let currentMode = 'cpp';
 let lastTranslatedJS = '';
 
 function setMode(mode) {
   currentMode = mode;
-  document.getElementById('btn-js').classList.toggle('active',  mode === 'js');
   document.getElementById('btn-cpp').classList.toggle('active', mode === 'cpp');
+  document.getElementById('btn-py').classList.toggle('active',  mode === 'py');
   document.getElementById('panel-title').textContent =
-    mode === 'cpp' ? 'Code Editor — VEXcode C++' : 'Code Editor — Brain.Screen API';
-  document.getElementById('cpp-hint').style.display = mode === 'cpp' ? '' : 'none';
-  document.getElementById('translated-bar').classList.toggle('visible', false);
+    mode === 'cpp' ? 'Code Editor — VEXcode C++' : 'Code Editor — VEXcode Python';
+  document.getElementById('lang-hint').style.display = '';
+  document.getElementById('lang-hint').textContent =
+    (mode === 'cpp' ? 'C++' : 'Python') + ' → auto-translated by Claude';
+  document.getElementById('translated-bar').classList.remove('visible');
   lastTranslatedJS = '';
 
-  // Swap placeholder hint in editor
+  // Load appropriate placeholder if editor is empty
   const editor = document.getElementById('editor');
-  if (mode === 'cpp' && editor.value.trim() === '') {
-    editor.value = CPP_PLACEHOLDER;
+  if (editor.value.trim() === '' || editor.value === CPP_PLACEHOLDER || editor.value === PY_PLACEHOLDER) {
+    editor.value = mode === 'cpp' ? CPP_PLACEHOLDER : PY_PLACEHOLDER;
     updateLineNums();
   }
 }
 
-const CPP_PLACEHOLDER = `// Paste your VEXcode C++ here and hit ▶ Run
-// Claude will translate it to JavaScript and run it on the brain!
+const CPP_PLACEHOLDER =
+`// Paste or write VEXcode C++ — hit ▶ Run and Claude translates it live!
+#include "vex.h"
+using namespace vex;
 
-// Example:
 void drawSelector() {
   Brain.Screen.clearScreen(color::black);
   Brain.Screen.setFillColor(color::green);
@@ -1148,6 +1148,14 @@ void drawSelector() {
   Brain.Screen.printAt(20, 95, "Hello from C++!");
 }
 drawSelector();`;
+
+const PY_PLACEHOLDER =
+`# Paste or write VEXcode Python — hit ▶ Run and Claude translates it live!
+brain.screen.clear_screen()
+brain.screen.set_fill_color(Color.GREEN)
+brain.screen.set_pen_color(Color.WHITE)
+brain.screen.draw_rectangle(10, 50, 200, 80)
+brain.screen.print_at(20, 95, "Hello from Python!")`;
 
 // ─────────────────────────────────────────
 //  API Key management
@@ -1179,63 +1187,91 @@ function openKeyModal() {
   document.getElementById('key-error').style.display = 'none';
   document.getElementById('apikey-backdrop').classList.add('open');
 }
-function closeKeyModal()          { document.getElementById('apikey-backdrop').classList.remove('open'); }
-function closeKeyModalOutside(e)  { if (e.target === document.getElementById('apikey-backdrop')) closeKeyModal(); }
+function closeKeyModal()         { document.getElementById('apikey-backdrop').classList.remove('open'); }
+function closeKeyModalOutside(e) { if (e.target === document.getElementById('apikey-backdrop')) closeKeyModal(); }
 
 // ─────────────────────────────────────────
-//  C++ → JS translation via Anthropic API
+//  Translation system prompts
 // ─────────────────────────────────────────
-const SYSTEM_PROMPT = `You are a VEXcode C++ to JavaScript translator for a VEX V5 Brain Screen simulator.
-
-The simulator provides this JavaScript API (Brain.Screen.*):
+const SHARED_API_DOCS = `
+The simulator's JavaScript API (Brain.Screen.*):
 - Brain.Screen.clearScreen(color)
 - Brain.Screen.setFillColor(color) / setPenColor(color)
 - Brain.Screen.setFont("mono12"|"mono15"|"mono20"|"mono30"|"mono40"|"mono60"|"prop20"|"prop30"|"prop40"|"prop60")
 - Brain.Screen.setCursor(row, col)
 - Brain.Screen.print(...args)
-- Brain.Screen.printAt(x, y, ...args)
+- Brain.Screen.printAt(x, y, text)
 - Brain.Screen.drawLine(x1, y1, x2, y2)
-- Brain.Screen.drawRect(x, y, w, h)  [outline only]
-- Brain.Screen.fillRect(x, y, w, h)  [fill + outline]
-- Brain.Screen.drawRectangle(x, y, w, h)  [fill + outline, VEXcode style]
+- Brain.Screen.drawRect(x, y, w, h)       [outline only]
+- Brain.Screen.fillRect(x, y, w, h)       [fill + outline]
+- Brain.Screen.drawRectangle(x, y, w, h)  [fill + outline, VEXcode alias]
 - Brain.Screen.drawCircle(x, y, r) / fillCircle(x, y, r)
 - Brain.Screen.drawPixel(x, y)
 - Brain.Screen.pressed(callback)
 - Brain.Screen.xPosition() / yPosition()
 
-Color values: use CSS strings like "#ff0000", "rgb(r,g,b)", or these globals:
-red, green, blue, yellow, orange, purple, cyan, magenta, white, black
-color(0xRRGGBB) function is available.
-VEXcode color:: syntax like color::red → translate to the bare name: red
+Color values: CSS strings "#rrggbb", "rgb(r,g,b)", or bare globals: red, green, blue, yellow, orange, purple, cyan, magenta, white, black. color(0xRRGGBB) is also available.
+Return ONLY raw runnable JavaScript — no markdown fences, no explanation, no comments about the translation.`;
 
-Translation rules:
-- Convert C++ types (int, void, bool, const) to JS equivalents (let/const, function, etc.)
-- Convert color::X to bare X (e.g. color::green → green)
-- Convert vex::color(hex) or color(hex) to color(hex) — the color() function is available
-- Brain.Screen API is identical between C++ and JS — keep those calls as-is
-- Remove #include statements, "using namespace vex;", etc.
-- Convert C++ string literals (const char*, std::string) to JS strings
-- Convert C++ for/while/if to JS equivalents
-- Remove type annotations from function parameters
-- Convert :: namespace syntax to nothing (e.g. vex::Brain → Brain)
-- Keep all logic, variable names, and structure intact
-- Do NOT add any explanation, comments about translation, or markdown
-- Return ONLY the raw runnable JavaScript code, nothing else`;
+const CPP_SYSTEM_PROMPT = `You are a VEXcode C++ to JavaScript translator for a VEX V5 Brain Screen simulator.
+${SHARED_API_DOCS}
 
-async function translateCppToJS(cppCode) {
+C++ translation rules:
+- Remove #include, "using namespace vex;", and all preprocessor directives
+- Convert types: void/int/bool/float/const/char* → JS equivalents (function/let/const)
+- Remove all type annotations from parameters and variables
+- color::X → bare color name (color::green → green, color::black → black)
+- vex::color(hex) or color(hex) → color(hex)
+- Brain.Screen.* calls stay identical
+- FontType enum or bare font names (mono20, prop30 etc.) → quoted string "mono20"
+- Convert :: namespace operator (remove namespace prefix)
+- Convert C++ for/while/if/else → JS equivalents
+- Keep all variable names, logic, and structure intact`;
+
+const PY_SYSTEM_PROMPT = `You are a VEXcode Python to JavaScript translator for a VEX V5 Brain Screen simulator.
+${SHARED_API_DOCS}
+
+Python translation rules:
+- Remove "from vex import *", "import vex", and similar imports
+- brain.screen.* → Brain.Screen.* (snake_case to camelCase method names)
+  e.g. brain.screen.clear_screen() → Brain.Screen.clearScreen()
+  e.g. brain.screen.set_fill_color(x) → Brain.Screen.setFillColor(x)
+  e.g. brain.screen.set_pen_color(x) → Brain.Screen.setPenColor(x)
+  e.g. brain.screen.print_at(x,y,t) → Brain.Screen.printAt(x,y,t)
+  e.g. brain.screen.draw_rectangle(x,y,w,h) → Brain.Screen.drawRectangle(x,y,w,h)
+  e.g. brain.screen.draw_line(x1,y1,x2,y2) → Brain.Screen.drawLine(x1,y1,x2,y2)
+  e.g. brain.screen.draw_circle(x,y,r) → Brain.Screen.drawCircle(x,y,r)
+  e.g. brain.screen.draw_pixel(x,y) → Brain.Screen.drawPixel(x,y)
+  e.g. brain.screen.set_cursor(r,c) → Brain.Screen.setCursor(r,c)
+  e.g. brain.screen.set_font(FontType.MONO20) → Brain.Screen.setFont("mono20")
+  e.g. brain.screen.pressed(cb) → Brain.Screen.pressed(cb)
+- Color.RED → red, Color.GREEN → green, Color.BLUE → blue, etc. (bare lowercase globals)
+- FontType.MONO20 → "mono20", FontType.PROP30 → "prop30", etc.
+- def functionName(params): → function functionName(params) { ... }
+- Python indentation blocks → { } braces
+- Python for/while/if/else → JS equivalents
+- Keep all variable names, logic, and structure intact`;
+
+// ─────────────────────────────────────────
+//  Translation via Anthropic API
+// ─────────────────────────────────────────
+async function translateToJS(sourceCode, mode) {
   const key = getKey();
   if (!key) {
     openKeyModal();
-    throw new Error('No API key set — enter your Anthropic key to use C++ mode');
+    throw new Error('No API key set — enter your Anthropic key to translate code');
   }
 
   const overlay = document.getElementById('translating-overlay');
-  const sub = document.getElementById('translating-sub');
+  document.getElementById('translating-label').textContent =
+    (mode === 'cpp' ? 'C++' : 'Python') + ' → JS';
   overlay.classList.add('active');
-  sub.textContent = 'Sending to Claude...';
+  document.getElementById('translating-sub').textContent = 'Sending to Claude...';
+
+  const systemPrompt = mode === 'cpp' ? CPP_SYSTEM_PROMPT : PY_SYSTEM_PROMPT;
+  const langLabel    = mode === 'cpp' ? 'VEXcode C++' : 'VEXcode Python';
 
   try {
-    sub.textContent = 'Translating...';
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -1247,8 +1283,8 @@ async function translateCppToJS(cppCode) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: `Translate this VEXcode C++ to JavaScript:\n\n${cppCode}` }]
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `Translate this ${langLabel} to JavaScript:\n\n${sourceCode}` }]
       })
     });
 
@@ -1260,7 +1296,6 @@ async function translateCppToJS(cppCode) {
 
     const data = await response.json();
     const js = data.content.find(b => b.type === 'text')?.text || '';
-    // Strip any accidental markdown fences
     return js.replace(/^```[\w]*\n?/gm, '').replace(/^```\n?/gm, '').trim();
   } finally {
     overlay.classList.remove('active');
@@ -1310,35 +1345,30 @@ function flashLeds() {
 }
 
 function runCode() {
-  if (currentMode === 'cpp') {
-    runCpp();
-  } else {
-    runJS(document.getElementById('editor').value);
-  }
+  runTranslated();
 }
 
-async function runCpp() {
+async function runTranslated() {
   clearConsole();
-  const cppCode = document.getElementById('editor').value.trim();
-  if (!cppCode) { setStatus('Nothing to run', ''); return; }
+  const sourceCode = document.getElementById('editor').value.trim();
+  if (!sourceCode) { setStatus('Nothing to run', ''); return; }
 
   document.getElementById('run-btn').disabled = true;
   setStatus('⟳ Translating...', '');
 
   try {
-    const js = await translateCppToJS(cppCode);
+    const js = await translateToJS(sourceCode, currentMode);
     lastTranslatedJS = js;
 
-    // Show translated bar
     const bar = document.getElementById('translated-bar');
     bar.classList.add('visible');
     document.getElementById('translated-preview').textContent = js.split('\n')[0].slice(0, 80) + '...';
 
-    addConsole('✓ Translated by Claude', 'ok');
+    addConsole('✓ Translated by Claude (' + (currentMode === 'cpp' ? 'C++' : 'Python') + ')', 'ok');
     runJS(js);
   } catch(e) {
-    setStatus('✗ Translation failed: ' + e.message, 'err');
-    addConsole('Translation error: ' + e.message, 'err');
+    setStatus('✗ ' + e.message, 'err');
+    addConsole('Error: ' + e.message, 'err');
   } finally {
     document.getElementById('run-btn').disabled = false;
   }
@@ -1379,358 +1409,297 @@ function clearScreen() {
 }
 
 // ─────────────────────────────────────────
-//  Examples
+//  Examples (each has cpp + py versions)
 // ─────────────────────────────────────────
 const EXAMPLES = {
-hello: `// Hello World — basic text & color
-Brain.Screen.clearScreen(Color.Black);
-Brain.Screen.setPenColor(Color.Green);
-Brain.Screen.setFont("mono30");
+
+hello: {
+cpp:
+`// Hello World
+#include "vex.h"
+using namespace vex;
+
+Brain.Screen.clearScreen(color::black);
+Brain.Screen.setPenColor(color::green);
+Brain.Screen.setFont(mono30);
 Brain.Screen.setCursor(2, 3);
 Brain.Screen.print("Hello, VEX V5!");
 
-Brain.Screen.setPenColor(Color.White);
-Brain.Screen.setFont("mono20");
+Brain.Screen.setPenColor(color::white);
+Brain.Screen.setFont(mono20);
 Brain.Screen.setCursor(4, 5);
 Brain.Screen.print("Team 12345A");
 
-Brain.Screen.setPenColor(Color.Yellow);
-Brain.Screen.setFont("mono15");
+Brain.Screen.setPenColor(color::yellow);
+Brain.Screen.setFont(mono15);
 Brain.Screen.setCursor(6, 5);
 Brain.Screen.print("Ready to compete!");`,
 
-dashboard: `// Robot Status Dashboard
-Brain.Screen.clearScreen("#0a0e1a");
+py:
+`# Hello World
+brain.screen.clear_screen()
+brain.screen.set_pen_color(Color.GREEN)
+brain.screen.set_font(FontType.MONO30)
+brain.screen.set_cursor(2, 3)
+brain.screen.print("Hello, VEX V5!")
 
-// Top bar
-Brain.Screen.setFillColor("#1a2a4a");
-Brain.Screen.fillRect(0, 0, 480, 36);
-Brain.Screen.setPenColor("#4af0ff");
-Brain.Screen.setFont("mono20");
+brain.screen.set_pen_color(Color.WHITE)
+brain.screen.set_font(FontType.MONO20)
+brain.screen.set_cursor(4, 5)
+brain.screen.print("Team 12345A")
+
+brain.screen.set_pen_color(Color.YELLOW)
+brain.screen.set_font(FontType.MONO15)
+brain.screen.set_cursor(6, 5)
+brain.screen.print("Ready to compete!")`,
+},
+
+dashboard: {
+cpp:
+`// Robot Status Dashboard
+#include "vex.h"
+using namespace vex;
+
+Brain.Screen.clearScreen(vex::color(0x0a0e1a));
+Brain.Screen.setFillColor(vex::color(0x1a2a4a));
+Brain.Screen.drawRectangle(0, 0, 480, 36);
+Brain.Screen.setPenColor(vex::color(0x4af0ff));
+Brain.Screen.setFont(mono20);
 Brain.Screen.printAt(14, 24, "ROBOT STATUS MONITOR");
-Brain.Screen.setPenColor("#aaaaaa");
-Brain.Screen.setFont("mono15");
+Brain.Screen.setPenColor(color::white);
+Brain.Screen.setFont(mono15);
 Brain.Screen.printAt(370, 24, "AUTO MODE");
-
-// Divider line
-Brain.Screen.setPenColor("#2a4a6a");
+Brain.Screen.setPenColor(vex::color(0x2a4a6a));
 Brain.Screen.drawLine(0, 36, 480, 36);
 
 // Battery gauge
-Brain.Screen.setPenColor("#ffffff");
-Brain.Screen.setFont("mono15");
+Brain.Screen.setPenColor(color::white);
+Brain.Screen.setFont(mono15);
 Brain.Screen.printAt(14, 60, "BATTERY");
-Brain.Screen.setPenColor("#444");
-Brain.Screen.setFillColor("#111");
-Brain.Screen.fillRect(14, 68, 140, 16);
-Brain.Screen.setFillColor("#30ff60");
-Brain.Screen.fillRect(14, 68, 105, 16); // 75%
-Brain.Screen.setPenColor("#30ff60");
+Brain.Screen.setFillColor(vex::color(0x111111));
+Brain.Screen.setPenColor(color::black);
+Brain.Screen.drawRectangle(14, 68, 140, 16);
+Brain.Screen.setFillColor(color::green);
+Brain.Screen.drawRectangle(14, 68, 105, 16);
+Brain.Screen.setPenColor(color::green);
 Brain.Screen.printAt(165, 81, "75%");
 
-// Motor temps
-Brain.Screen.setPenColor("#ffffff");
-Brain.Screen.printAt(14, 110, "MOTOR TEMPS (°C)");
-const motors = ["FL", "FR", "BL", "BR", "ARM"];
-const temps   = [32,   38,   35,   40,   28];
-const colors  = ["#30ff60","#f0c030","#30ff60","#ff4030","#30ff60"];
-motors.forEach((m, i) => {
-  const x = 14 + i * 92;
-  Brain.Screen.setFillColor("#1a1a2a");
-  Brain.Screen.fillRect(x, 118, 80, 48);
-  Brain.Screen.setPenColor(colors[i]);
-  Brain.Screen.setFont("mono20");
-  Brain.Screen.printAt(x + 8, 140, m);
-  Brain.Screen.setFont("mono15");
-  Brain.Screen.printAt(x + 8, 158, temps[i] + "°");
-});
-
-// Gyro
-Brain.Screen.setPenColor("#ffffff");
-Brain.Screen.setFont("mono15");
+// Heading & encoder
+Brain.Screen.setPenColor(color::white);
+Brain.Screen.setFont(mono15);
 Brain.Screen.printAt(14, 190, "HEADING:");
-Brain.Screen.setPenColor("#4af0ff");
-Brain.Screen.setFont("mono20");
-Brain.Screen.printAt(100, 190, "127.4°");
-
-// Encoder
-Brain.Screen.setPenColor("#ffffff");
-Brain.Screen.setFont("mono15");
+Brain.Screen.setPenColor(vex::color(0x4af0ff));
+Brain.Screen.setFont(mono20);
+Brain.Screen.printAt(100, 190, "127.4 deg");
+Brain.Screen.setPenColor(color::white);
+Brain.Screen.setFont(mono15);
 Brain.Screen.printAt(240, 190, "ENC LEFT:");
-Brain.Screen.setPenColor("#f0c030");
-Brain.Screen.setFont("mono20");
+Brain.Screen.setPenColor(color::yellow);
+Brain.Screen.setFont(mono20);
 Brain.Screen.printAt(356, 190, "4820");`,
 
-shapes: `// Shapes & Color Demo
-Brain.Screen.clearScreen(Color.Black);
+py:
+`# Robot Status Dashboard
+brain.screen.clear_screen()
+brain.screen.set_fill_color(Color(0x1a2a4a))
+brain.screen.draw_rectangle(0, 0, 480, 36)
+brain.screen.set_pen_color(Color(0x4af0ff))
+brain.screen.set_font(FontType.MONO20)
+brain.screen.print_at(14, 24, "ROBOT STATUS MONITOR")
+brain.screen.set_pen_color(Color.WHITE)
+brain.screen.set_font(FontType.MONO15)
+brain.screen.print_at(370, 24, "AUTO MODE")
+brain.screen.set_pen_color(Color(0x2a4a6a))
+brain.screen.draw_line(0, 36, 480, 36)
 
-// Filled colored rectangles
-const rects = [
-  { x:10,  y:10,  w:80, h:50, fill:"#e02020", pen:"#ff6060" },
-  { x:100, y:10,  w:80, h:50, fill:"#20a020", pen:"#60ff60" },
-  { x:190, y:10,  w:80, h:50, fill:"#2050e0", pen:"#6090ff" },
-  { x:280, y:10,  w:80, h:50, fill:"#e0a020", pen:"#ffd060" },
-  { x:370, y:10,  w:100,h:50, fill:"#8020d0", pen:"#c060ff" },
-];
-rects.forEach(r => {
-  Brain.Screen.setFillColor(r.fill);
-  Brain.Screen.setPenColor(r.pen);
-  Brain.Screen.fillRect(r.x, r.y, r.w, r.h);
-});
+# Battery gauge
+brain.screen.set_pen_color(Color.WHITE)
+brain.screen.print_at(14, 60, "BATTERY")
+brain.screen.set_fill_color(Color(0x111111))
+brain.screen.draw_rectangle(14, 68, 140, 16)
+brain.screen.set_fill_color(Color.GREEN)
+brain.screen.draw_rectangle(14, 68, 105, 16)
+brain.screen.set_pen_color(Color.GREEN)
+brain.screen.print_at(165, 81, "75%")
 
-// Circles
-for (let i = 0; i < 6; i++) {
-  const hue = i * 60;
-  Brain.Screen.setFillColor(\`hsl(\${hue}, 90%, 40%)\`);
-  Brain.Screen.setPenColor(\`hsl(\${hue}, 90%, 75%)\`);
-  Brain.Screen.fillCircle(40 + i * 75, 120, 28);
-}
+# Heading & encoder
+brain.screen.set_pen_color(Color.WHITE)
+brain.screen.set_font(FontType.MONO15)
+brain.screen.print_at(14, 190, "HEADING:")
+brain.screen.set_pen_color(Color(0x4af0ff))
+brain.screen.set_font(FontType.MONO20)
+brain.screen.print_at(100, 190, "127.4 deg")
+brain.screen.set_pen_color(Color.WHITE)
+brain.screen.set_font(FontType.MONO15)
+brain.screen.print_at(240, 190, "ENC LEFT:")
+brain.screen.set_pen_color(Color.YELLOW)
+brain.screen.set_font(FontType.MONO20)
+brain.screen.print_at(356, 190, "4820")`,
+},
 
-// Lines (rainbow)
-for (let i = 0; i < 20; i++) {
-  Brain.Screen.setPenColor(\`hsl(\${i * 18}, 100%, 60%)\`);
-  Brain.Screen.drawLine(0 + i * 8, 165, 240, 165 + i * 4);
-}
+shapes: {
+cpp:
+`// Shapes & Color Demo
+#include "vex.h"
+using namespace vex;
 
-// Hollow shapes
-Brain.Screen.setPenColor(Color.Cyan);
-Brain.Screen.drawRect(260, 160, 100, 70);
-Brain.Screen.drawCircle(400, 195, 35);
-Brain.Screen.drawLine(260, 230, 480, 165);
+Brain.Screen.clearScreen(color::black);
 
-// Text
-Brain.Screen.setPenColor(Color.White);
-Brain.Screen.setFont("mono15");
-Brain.Screen.printAt(180, 232, "Shapes & Colors Demo");`,
+// Filled rectangles
+Brain.Screen.setFillColor(color::red);    Brain.Screen.setPenColor(color::orange); Brain.Screen.drawRectangle(10,  10, 80, 50);
+Brain.Screen.setFillColor(color::green);  Brain.Screen.setPenColor(color::yellow); Brain.Screen.drawRectangle(100, 10, 80, 50);
+Brain.Screen.setFillColor(color::blue);   Brain.Screen.setPenColor(color::cyan);   Brain.Screen.drawRectangle(190, 10, 80, 50);
+Brain.Screen.setFillColor(color::yellow); Brain.Screen.setPenColor(color::white);  Brain.Screen.drawRectangle(280, 10, 80, 50);
+Brain.Screen.setFillColor(color::purple); Brain.Screen.setPenColor(color::cyan);   Brain.Screen.drawRectangle(370, 10, 100,50);
 
-auton: `// Autonomous Selector UI
-Brain.Screen.clearScreen("#0d0d0d");
+// Filled circles
+Brain.Screen.setFillColor(color::red);    Brain.Screen.setPenColor(color::orange); Brain.Screen.drawCircle(40,  120, 28);
+Brain.Screen.setFillColor(color::yellow); Brain.Screen.setPenColor(color::white);  Brain.Screen.drawCircle(115, 120, 28);
+Brain.Screen.setFillColor(color::green);  Brain.Screen.setPenColor(color::cyan);   Brain.Screen.drawCircle(190, 120, 28);
+Brain.Screen.setFillColor(color::cyan);   Brain.Screen.setPenColor(color::blue);   Brain.Screen.drawCircle(265, 120, 28);
+Brain.Screen.setFillColor(color::blue);   Brain.Screen.setPenColor(color::purple); Brain.Screen.drawCircle(340, 120, 28);
+Brain.Screen.setFillColor(color::purple); Brain.Screen.setPenColor(color::red);    Brain.Screen.drawCircle(415, 120, 28);
 
-const selections = ["Far Side", "Close Side", "Skills", "Do Nothing"];
-let selected = 1;
+// Outlines & line
+Brain.Screen.setPenColor(color::cyan);   Brain.Screen.drawRectangle(260, 160, 100, 70);
+Brain.Screen.setPenColor(color::yellow); Brain.Screen.drawCircle(400, 195, 34);
+Brain.Screen.setPenColor(color::white);  Brain.Screen.drawLine(0, 165, 240, 230);
+Brain.Screen.setPenColor(color::white);
+Brain.Screen.setFont(mono15);
+Brain.Screen.printAt(160, 232, "Shapes & Colors Demo");`,
 
-// Title bar
-Brain.Screen.setFillColor("#1a1a1a");
-Brain.Screen.fillRect(0, 0, 480, 40);
-Brain.Screen.setPenColor("#ffffff");
-Brain.Screen.setFont("prop30");
-Brain.Screen.printAt(14, 28, "AUTONOMOUS SELECTOR");
-Brain.Screen.setPenColor("#555");
-Brain.Screen.drawLine(0, 40, 480, 40);
+py:
+`# Shapes & Color Demo
+brain.screen.clear_screen()
 
-// Alliance indicator
-Brain.Screen.setFillColor("#c00000");
-Brain.Screen.fillRect(400, 4, 72, 32);
-Brain.Screen.setPenColor("#ffffff");
-Brain.Screen.setFont("mono15");
-Brain.Screen.printAt(410, 24, "RED");
+# Filled rectangles
+colors = [Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.PURPLE]
+for i in range(5):
+    brain.screen.set_fill_color(colors[i])
+    brain.screen.draw_rectangle(10 + i * 90, 10, 80, 50)
 
-// Draw cards
-selections.forEach((name, i) => {
-  const x = 14 + (i % 2) * 234;
-  const y = 54 + Math.floor(i / 2) * 86;
-  const isSelected = i === selected;
+# Filled circles
+for i in range(6):
+    brain.screen.set_fill_color(colors[i % 5])
+    brain.screen.draw_circle(40 + i * 75, 120, 28)
 
-  Brain.Screen.setFillColor(isSelected ? "#1a3a1a" : "#1a1a1a");
-  Brain.Screen.setPenColor(isSelected ? "#40e060" : "#333333");
-  Brain.Screen.fillRect(x, y, 218, 74);
+# Outlines
+brain.screen.set_fill_color(Color.BLACK)
+brain.screen.set_pen_color(Color.CYAN)
+brain.screen.draw_rectangle(260, 160, 100, 70)
+brain.screen.set_pen_color(Color.YELLOW)
+brain.screen.draw_circle(400, 195, 34)
+brain.screen.set_pen_color(Color.WHITE)
+brain.screen.draw_line(0, 165, 240, 230)
+brain.screen.set_font(FontType.MONO15)
+brain.screen.print_at(160, 232, "Shapes & Colors Demo")`,
+},
 
+auton: {
+cpp:
+`// Auton Selector — click buttons on the brain screen!
+#include "vex.h"
+using namespace vex;
+
+int AUTOCHOICE = 1;
+const int BTNW = 200;
+const int BTNH = 90;
+const int COL1 = 10;
+const int COL2 = 250;
+const int ROW1 = 50;
+
+void drawButton(int x, int y, const char* label, bool isSelected) {
   if (isSelected) {
-    // Glow border (drawn as extra rect)
-    Brain.Screen.setPenColor("#40e060");
-    Brain.Screen.drawRect(x+1, y+1, 216, 72);
-    Brain.Screen.setPenColor("#20a040");
-    Brain.Screen.drawRect(x+2, y+2, 214, 70);
-  }
-
-  Brain.Screen.setPenColor(isSelected ? "#40e060" : "#888888");
-  Brain.Screen.setFont("prop30");
-  Brain.Screen.printAt(x + 14, y + 32, name);
-
-  if (isSelected) {
-    Brain.Screen.setPenColor("#20a040");
-    Brain.Screen.setFont("mono15");
-    Brain.Screen.printAt(x + 14, y + 56, "SELECTED ✓");
+    Brain.Screen.setFillColor(color::green);
   } else {
-    Brain.Screen.setPenColor("#444");
-    Brain.Screen.setFont("mono15");
-    Brain.Screen.printAt(x + 14, y + 56, "Tap to select");
+    Brain.Screen.setFillColor(color::blue);
   }
-});`,
-
-graph: `// Live Data Graph
-Brain.Screen.clearScreen("#08090e");
-
-// Grid
-Brain.Screen.setPenColor("#1a1e2a");
-for (let x = 40; x <= 470; x += 43) {
-  Brain.Screen.drawLine(x, 20, x, 200);
-}
-for (let y = 20; y <= 200; y += 36) {
-  Brain.Screen.drawLine(40, y, 470, y);
-}
-
-// Axes
-Brain.Screen.setPenColor("#3a4050");
-Brain.Screen.drawLine(40, 200, 470, 200); // x axis
-Brain.Screen.drawLine(40, 20,  40,  200); // y axis
-
-// Axis labels
-Brain.Screen.setPenColor("#556070");
-Brain.Screen.setFont("mono12");
-for (let i = 0; i <= 5; i++) {
-  const val = 100 - i * 20;
-  Brain.Screen.printAt(2, 24 + i * 36, val.toString());
-}
-
-// Generate sinusoidal data (simulated motor velocity)
-const N = 43;
-const data1 = Array.from({length: N}, (_, i) => 50 + 40 * Math.sin(i * 0.35) * Math.exp(-i * 0.02));
-const data2 = Array.from({length: N}, (_, i) => 50 + 35 * Math.cos(i * 0.3 + 1) * Math.exp(-i * 0.025));
-
-function plotLine(data, color) {
-  Brain.Screen.setPenColor(color);
-  for (let i = 1; i < data.length; i++) {
-    const x1 = 40 + (i-1) * 10;
-    const y1 = 200 - (data[i-1] / 100) * 180;
-    const x2 = 40 + i * 10;
-    const y2 = 200 - (data[i]   / 100) * 180;
-    Brain.Screen.drawLine(x1, y1, x2, y2);
-    // Thicken
-    Brain.Screen.drawLine(x1, y1+1, x2, y2+1);
-  }
-}
-
-plotLine(data1, "#40c0ff");
-plotLine(data2, "#f06030");
-
-// Legend
-Brain.Screen.setPenColor("#40c0ff");
-Brain.Screen.drawLine(60, 218, 90, 218);
-Brain.Screen.setPenColor("#aaaaaa");
-Brain.Screen.setFont("mono12");
-Brain.Screen.printAt(95, 222, "Left Motor Velocity");
-
-Brain.Screen.setPenColor("#f06030");
-Brain.Screen.drawLine(270, 218, 300, 218);
-Brain.Screen.setPenColor("#aaaaaa");
-Brain.Screen.printAt(305, 222, "Right Motor Velocity");
-
-// Title
-Brain.Screen.setPenColor("#ffffff");
-Brain.Screen.setFont("mono15");
-Brain.Screen.printAt(120, 14, "MOTOR VELOCITY GRAPH  (rpm)");`,
-
-myauton: `// Your Auton Selector — translated from VEXcode C++
-// Click the buttons on the brain screen to switch selection!
-
-let AUTOCHOICE = 1;
-const BTNW = 200;
-const BTNH = 90;
-const COL1 = 10;
-const COL2 = 250;
-const ROW1 = 50;
-
-function drawButton(x, y, label, isSelected) {
-  if (isSelected) {
-    Brain.Screen.setFillColor(green);
-  } else {
-    Brain.Screen.setFillColor(blue);
-  }
-  Brain.Screen.setPenColor(white);
+  Brain.Screen.setPenColor(color::white);
   Brain.Screen.drawRectangle(x, y, BTNW, BTNH);
   Brain.Screen.printAt(x + 10, y + (BTNH / 2) + 5, label);
 }
 
-function drawSelector() {
-  Brain.Screen.clearScreen(color(0x212121));
-  Brain.Screen.setFillColor(color(0x37474F));
+void drawSelector() {
+  Brain.Screen.clearScreen(vex::color(0x212121));
+  Brain.Screen.setFillColor(vex::color(0x37474F));
   Brain.Screen.drawRectangle(0, 0, 480, 40);
-  Brain.Screen.setPenColor(white);
-  Brain.Screen.setFont("mono15");
+  Brain.Screen.setPenColor(color::white);
+  Brain.Screen.setFont(mono15);
   Brain.Screen.printAt(8, 26, "Select your auton");
   drawButton(COL1, ROW1, "Auton 1", AUTOCHOICE == 1);
   drawButton(COL2, ROW1, "Auton 2", AUTOCHOICE == 2);
 }
 
-function isTouching(touchX, touchY, btnX, btnY) {
-  if (touchX >= btnX && touchX <= btnX + BTNW) {
-    if (touchY >= btnY && touchY <= btnY + BTNH) {
-      return true;
-    }
-  }
-  return false;
+bool isTouching(int tx, int ty, int bx, int by) {
+  return tx >= bx && tx <= bx + BTNW && ty >= by && ty <= by + BTNH;
 }
 
-function onScreenPress() {
-  const tx = Brain.Screen.xPosition();
-  const ty = Brain.Screen.yPosition();
-  if (isTouching(tx, ty, COL1, ROW1)) {
-    AUTOCHOICE = 1;
-  } else if (isTouching(tx, ty, COL2, ROW1)) {
-    AUTOCHOICE = 2;
-  }
+void onScreenPress() {
+  int tx = Brain.Screen.xPosition();
+  int ty = Brain.Screen.yPosition();
+  if (isTouching(tx, ty, COL1, ROW1)) AUTOCHOICE = 1;
+  else if (isTouching(tx, ty, COL2, ROW1)) AUTOCHOICE = 2;
   drawSelector();
 }
 
 Brain.Screen.pressed(onScreenPress);
 drawSelector();`,
 
-art: `// Pixel Art — VEX Robot
-Brain.Screen.clearScreen("#000010");
+py:
+`# Auton Selector — click buttons on the brain screen!
+AUTOCHOICE = 1
+BTNW = 200
+BTNH = 90
+COL1 = 10
+COL2 = 250
+ROW1 = 50
 
-// Draw a simple robot face
-const draw = (x, y, w, h, color) => {
-  Brain.Screen.setFillColor(color);
-  Brain.Screen.setPenColor(color);
-  Brain.Screen.fillRect(x, y, w, h);
-};
+def draw_button(x, y, label, is_selected):
+    if is_selected:
+        brain.screen.set_fill_color(Color.GREEN)
+    else:
+        brain.screen.set_fill_color(Color.BLUE)
+    brain.screen.set_pen_color(Color.WHITE)
+    brain.screen.draw_rectangle(x, y, BTNW, BTNH)
+    brain.screen.print_at(x + 10, y + BTNH // 2 + 5, label)
 
-// Background stars
-Brain.Screen.setPenColor("#ffffff");
-for (let i = 0; i < 60; i++) {
-  const sx = (i * 137 + 17) % 480;
-  const sy = (i * 89  + 31) % 240;
-  Brain.Screen.drawPixel(sx, sy);
-  if (i % 5 === 0) Brain.Screen.drawPixel(sx+1, sy);
-}
+def draw_selector():
+    brain.screen.clear_screen()
+    brain.screen.set_fill_color(Color(0x37474F))
+    brain.screen.draw_rectangle(0, 0, 480, 40)
+    brain.screen.set_pen_color(Color.WHITE)
+    brain.screen.set_font(FontType.MONO15)
+    brain.screen.print_at(8, 26, "Select your auton")
+    draw_button(COL1, ROW1, "Auton 1", AUTOCHOICE == 1)
+    draw_button(COL2, ROW1, "Auton 2", AUTOCHOICE == 2)
 
-// Robot body (centered around 240, 120)
-const cx = 240, cy = 120, s = 4;
-// Chassis
-draw(cx-10*s, cy-6*s, 20*s, 12*s, "#3a3a4a");
-// Screen on robot
-draw(cx-6*s, cy-4*s, 12*s, 6*s, "#001030");
-draw(cx-5*s, cy-3*s, 10*s, 4*s, "#0040a0");
-// Eyes
-draw(cx-4*s, cy-2*s, 2*s, 2*s, "#00ffff");
-draw(cx+2*s, cy-2*s, 2*s, 2*s, "#00ffff");
-// Smile
-draw(cx-3*s, cy+1*s, s, s/2, "#40ff40");
-draw(cx-2*s, cy+2*s, 4*s, s/2, "#40ff40");
-draw(cx+2*s, cy+1*s, s, s/2, "#40ff40");
-// Wheels
-draw(cx-11*s, cy+4*s, 3*s, 4*s, "#222");
-draw(cx+8*s,  cy+4*s, 3*s, 4*s, "#222");
-draw(cx-11*s, cy-2*s, 3*s, 4*s, "#222");
-draw(cx+8*s,  cy-2*s, 3*s, 4*s, "#222");
-// Arm
-draw(cx+10*s, cy-8*s, 2*s, 10*s, "#555");
-draw(cx+10*s, cy-10*s, 4*s, 3*s, "#777");
+def is_touching(tx, ty, bx, by):
+    return tx >= bx and tx <= bx + BTNW and ty >= by and ty <= by + BTNH
 
-// Label
-Brain.Screen.setPenColor("#40ff40");
-Brain.Screen.setFont("mono20");
-Brain.Screen.printAt(cx - 48, cy + 8*s + 20, "MY ROBOT");`,
+def on_screen_press():
+    global AUTOCHOICE
+    tx = brain.screen.x_position()
+    ty = brain.screen.y_position()
+    if is_touching(tx, ty, COL1, ROW1):
+        AUTOCHOICE = 1
+    elif is_touching(tx, ty, COL2, ROW1):
+        AUTOCHOICE = 2
+    draw_selector()
+
+brain.screen.pressed(on_screen_press)
+draw_selector()`,
+},
+
 };
 
 function loadExample(name) {
-  if (EXAMPLES[name]) {
-    document.getElementById('editor').value = EXAMPLES[name];
-    updateLineNums();
-    runCode();
-  }
+  const ex = EXAMPLES[name];
+  if (!ex) return;
+  document.getElementById('editor').value = ex[currentMode] || ex.cpp;
+  updateLineNums();
+  runCode();
 }
+
 
 // ─────────────────────────────────────────
 //  Line numbers
@@ -1850,6 +1819,7 @@ for (let i = 0; i < 21; i++) {
 // ─────────────────────────────────────────
 updateKeyPill();
 clearScreen();
+setMode('cpp');
 loadExample('hello');
 </script>
 </body>
