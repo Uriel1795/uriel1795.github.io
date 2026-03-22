@@ -1093,7 +1093,7 @@ function setMode(mode) {
     mode === 'cpp' ? 'Code Editor — VEXcode C++' : 'Code Editor — VEXcode Python';
   document.getElementById('lang-hint').style.display = '';
   document.getElementById('lang-hint').textContent =
-    (mode === 'cpp' ? 'C++' : 'Python') + ' → auto-translated by Claude';
+    (mode === 'cpp' ? 'C++' : 'Python');
   document.getElementById('translated-bar').classList.remove('visible');
   lastTranslatedJS = '';
 
