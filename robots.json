@@ -1,0 +1,109 @@
+[
+  {
+    "program": "VEX IQ",
+    "game": "Pitching In",
+    "year": "2021–22",
+    "team": "12345A",
+    "model": "models/2021-pitching-in.glb",
+    "students": [
+      { "name": "Ana R.", "photo": "photos/ana.jpg" },
+      { "name": "Marco D.", "photo": "photos/marco.jpg" },
+      { "name": "Priya S.", "photo": "photos/priya.jpg" }
+    ],
+    "award": "Design Award — State",
+    "record": "18–6",
+    "specs": {
+      "Drivetrain": "4-motor direct",
+      "Scoring": "Chain intake",
+      "Size": "11 × 13 × 14 in",
+      "Built": "Sep–Feb"
+    },
+    "note": "First season with a hinged ball hopper. Rebuilt the drive twice after the tower kept high-centering on the barrier."
+  },
+  {
+    "program": "VEX IQ",
+    "game": "Slapshot",
+    "year": "2022–23",
+    "team": "12345A",
+    "model": "models/2022-slapshot.glb",
+    "students": [
+      { "name": "Priya S." },
+      { "name": "Jonah K." },
+      { "name": "Elena V." },
+      { "name": "Tomas B." }
+    ],
+    "award": "Excellence Award — Regional",
+    "record": "24–4",
+    "specs": {
+      "Drivetrain": "6-wheel tank",
+      "Scoring": "Rubber-band puck flicker",
+      "Size": "11 × 15 × 12 in",
+      "Built": "Aug–Jan"
+    },
+    "note": "Lowest robot the team has built. The flicker arm was tuned by ear until it cleared the far goal nine times out of ten."
+  },
+  {
+    "program": "VEX IQ",
+    "game": "Full Volume",
+    "year": "2023–24",
+    "team": "12345B",
+    "model": "models/2023-full-volume.glb",
+    "students": [
+      { "name": "Tomas B." },
+      { "name": "Nia W." },
+      { "name": "Sam O." }
+    ],
+    "award": "Robot Skills — 2nd",
+    "record": "20–8",
+    "specs": {
+      "Drivetrain": "4-wheel omni",
+      "Scoring": "Two-stage conveyor",
+      "Size": "11 × 14 × 15 in",
+      "Built": "Sep–Mar"
+    },
+    "note": "The conveyor jammed at every early tournament. Swapping to wider spacers on the roller shafts fixed it in week six."
+  },
+  {
+    "program": "VEX IQ",
+    "game": "Rapid Relay",
+    "year": "2024–25",
+    "team": "12345B",
+    "model": "models/2024-rapid-relay.glb",
+    "students": [
+      { "name": "Nia W." },
+      { "name": "Dev P." },
+      { "name": "Iris L." },
+      { "name": "Marcus H." }
+    ],
+    "award": "Teamwork Champion — State",
+    "record": "29–3",
+    "specs": {
+      "Drivetrain": "6-wheel tank",
+      "Scoring": "Flywheel launcher",
+      "Size": "11 × 12 × 16 in",
+      "Built": "Aug–Mar"
+    },
+    "note": "Best-performing robot in program history. The flywheel ran off a dedicated motor so the drive never browned out mid-match."
+  },
+  {
+    "program": "VEX IQ",
+    "game": "Mix & Match",
+    "year": "2025–26",
+    "team": "12345C",
+    "model": "models/2025-mix-match.glb",
+    "students": [
+      { "name": "Iris L." },
+      { "name": "Owen F." },
+      { "name": "Zara N." }
+    ],
+    "award": "Build Award — Regional",
+    "record": "15–5",
+    "specs": {
+      "Drivetrain": "4-motor direct",
+      "Scoring": "Claw + linear lift",
+      "Size": "11 × 13 × 18 in",
+      "Built": "Sep–present"
+    },
+    "note": "Current build. The lift is on its third revision; the team is testing a lighter carriage this month."
+  }
+]

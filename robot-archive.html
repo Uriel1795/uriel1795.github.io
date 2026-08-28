@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Robot Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Required. The addon modules (OrbitControls, GLTFLoader) import from the
+     bare specifier "three", which browsers cannot resolve on their own.
+     This must appear before any <script type="module">. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --paper:#F3F4F2;
+  --ink:#12171A;
+  --ink-60:#5A6468;
+  --stage:#151B1E;
+  --tile:#9AA4A2;
+  --rule:#C9CDC9;
+  --red:#E4002B;
+  --blue:#0072CE;
+  --alu:#B4BAB8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Archivo",system-ui,sans-serif;
+  font-variation-settings:"wdth" 100;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 20px 64px}
+
+/* ---------- masthead ---------- */
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:16px;padding-bottom:14px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap;
+}
+.mark{
+  font-variation-settings:"wdth" 118,"wght" 800;
+  font-size:clamp(18px,2.4vw,26px);letter-spacing:-.01em;text-transform:uppercase;
+}
+.mark em{font-style:normal;color:var(--red)}
+.masthead .count{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-60);
+  letter-spacing:.06em;text-transform:uppercase;
+}
+
+/* section eyebrows, shared */
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-60);font-weight:500;margin:0 0 10px;
+}
+
+/* ---------- showcase: canvas + plate ---------- */
+.showcase{position:relative;margin-top:20px}
+.stage{position:relative;background:var(--stage);aspect-ratio:16/9;min-height:340px;overflow:hidden}
+#view{display:block;width:100%;height:100%}
+
+.plate{
+  position:absolute;top:22px;left:22px;
+  background:var(--paper);padding:16px 20px 18px;max-width:340px;
+  box-shadow:0 18px 40px rgba(0,0,0,.35);
+}
+.plate .program{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-60);margin:0;
+}
+.title{margin:6px 0 0;line-height:.92}
+.title .game{
+  display:block;font-variation-settings:"wdth" 112,"wght" 800;
+  font-size:clamp(30px,3.6vw,46px);letter-spacing:-.025em;text-transform:uppercase;
+}
+.title .year{
+  display:block;margin-top:8px;font-family:"IBM Plex Mono",monospace;
+  font-size:13px;letter-spacing:.16em;color:var(--ink-60);
+}
+.plate .team{
+  margin:14px 0 0;padding-top:12px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.6;
+}
+.plate .team b{font-weight:600}
+.plate .team .award{color:var(--red)}
+
+.hint{
+  position:absolute;right:22px;bottom:22px;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(243,244,242,.42);
+}
+.status{
+  position:absolute;left:0;right:0;bottom:50%;text-align:center;padding:0 24px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.12em;
+  text-transform:uppercase;color:rgba(243,244,242,.55);line-height:1.6;
+}
+.status[hidden]{display:none}
+.status.error{color:#FF8AA0;text-transform:none;letter-spacing:.02em;font-size:13px}
+
+/* ---------- crew ---------- */
+/* Desktop: the list sits in the plate as an overlapping row of faces.
+   Mobile: JS moves the same <ul> into .crew-section below the canvas. */
+.crew{list-style:none;padding:0}
+.crew figure{margin:0;position:relative}
+.crew img,.crew .fallback{
+  display:block;border-radius:50%;object-fit:cover;
+  border:2.5px solid var(--paper);background:var(--tile);
+}
+.crew .fallback{
+  display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;
+  font-weight:600;color:var(--paper);letter-spacing:.02em;
+}
+
+/* --- in-plate variant --- */
+.crew-slot .crew{display:flex;margin:0 0 14px}
+.crew-slot .crew li{margin-right:-10px}
+.crew-slot .crew li:last-child{margin-right:0}
+.crew-slot .crew img,.crew-slot .crew .fallback{width:52px;height:52px;font-size:15px}
+.crew-slot .crew figcaption{
+  position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);
+  white-space:nowrap;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  background:var(--ink);color:var(--paper);padding:4px 7px;opacity:0;
+  transition:opacity .15s ease;pointer-events:none;z-index:3;
+}
+.crew-slot .crew li:hover figcaption,
+.crew-slot .crew li:focus-within figcaption{opacity:1}
+
+/* --- standalone section variant (mobile) --- */
+.crew-section{display:none;margin-top:26px;padding-top:22px;border-top:1.5px solid var(--ink)}
+.crew-section .crew{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));
+  gap:18px 12px;margin:0;
+}
+.crew-section .crew li{text-align:center}
+.crew-section .crew img,.crew-section .crew .fallback{
+  width:64px;height:64px;font-size:18px;margin:0 auto 8px;
+}
+.crew-section .crew figcaption{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.35;
+  color:var(--ink);word-break:break-word;
+}
+
+/* ---------- season rail ---------- */
+.rail{margin-top:34px}
+.channel{
+  position:relative;display:flex;overflow-x:auto;scrollbar-width:thin;
+  background:linear-gradient(180deg,#DDE1DF 0%,var(--alu) 18%,#A7AEAC 82%,#8E9694 100%);
+  border-top:1.5px solid #EDF0EE;border-bottom:1.5px solid #7E8684;padding:0 6px;
+}
+.bay{
+  flex:0 0 auto;position:relative;border:0;background:none;cursor:pointer;
+  padding:16px 10px 14px;font:inherit;color:var(--ink);text-align:center;min-width:104px;
+}
+.bay:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.hole{
+  width:26px;height:26px;margin:0 auto 9px;border-radius:7px;background:#2B3234;
+  box-shadow:inset 0 2px 3px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.55);
+  display:grid;place-items:center;transition:background .18s ease;
+}
+.bay:hover .hole{background:#20272A}
+.bolt{width:16px;height:16px;opacity:0;transform:rotate(-25deg);
+  transition:opacity .18s ease,transform .3s ease}
+.bay[aria-current="true"] .hole{background:#39413F}
+.bay[aria-current="true"] .bolt{opacity:1;transform:rotate(0deg)}
+.bay .lab{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  letter-spacing:.04em;color:#3A4245;white-space:nowrap;
+}
+.bay[aria-current="true"] .lab{color:var(--ink);font-weight:600}
+.bay .gm{
+  display:block;font-size:12px;font-variation-settings:"wdth" 92,"wght" 600;
+  text-transform:uppercase;color:#4C5457;margin-top:3px;
+}
+.bay[aria-current="true"] .gm{color:var(--ink)}
+
+/* ---------- specs + note ---------- */
+.specs{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);
+  border:1px solid var(--rule);margin-top:26px;
+}
+.specs div{background:var(--paper);padding:14px 16px}
+.specs dt{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-60);margin:0 0 6px;
+}
+.specs dd{margin:0;font-size:15px;font-variation-settings:"wdth" 96,"wght" 600}
+.note{margin-top:26px;max-width:62ch;font-size:14px;line-height:1.65;color:var(--ink-60)}
+
+/* ---------- mobile: robot and crew become separate sections ---------- */
+@media (max-width:720px){
+  .wrap{padding:16px 16px 48px}
+  .stage{aspect-ratio:1/1;min-height:0}
+  .hint{display:none}
+  .plate{
+    position:static;max-width:none;box-shadow:none;
+    padding:18px 0 0;background:none;
+  }
+  .plate .team{font-size:12.5px}
+  .crew-slot{display:none}
+  .crew-section{display:block}
+  .specs{grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark">Robot <em>Archive</em></div>
+    <div class="count" id="count"></div>
+  </header>
+
+  <div class="showcase">
+    <div class="stage">
+      <canvas id="view"></canvas>
+      <p class="status" id="status">Loading archive…</p>
+      <p class="hint">Drag to orbit · scroll to zoom</p>
+    </div>
+
+    <article class="plate">
+      <div class="crew-slot" id="crew-slot"></div>
+      <p class="program" id="program"></p>
+      <h1 class="title">
+        <span class="game" id="game"></span>
+        <span class="year" id="year"></span>
+      </h1>
+      <p class="team" id="team"></p>
+    </article>
+  </div>
+
+  <section class="crew-section" id="crew-section" aria-labelledby="crew-heading">
+    <h2 class="eyebrow" id="crew-heading">Built by</h2>
+  </section>
+
+  <ul class="crew" id="crew"></ul>
+
+  <nav class="rail" aria-label="Season">
+    <h2 class="eyebrow">Seasons</h2>
+    <div class="channel" id="channel" role="tablist"></div>
+  </nav>
+
+  <dl class="specs" id="specs"></dl>
+  <p class="note" id="note"></p>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+window.__ARCHIVE_OK__ = true;
+const el = id => document.getElementById(id);
+const statusEl = el("status");
+
+/* ============================================================
+   Data lives in robots.json. Edit that file to add a robot —
+   you should never need to touch this one again.
+   Note: fetch() is blocked on file:// URLs, so while editing
+   locally run:  python3 -m http.server 8000
+   ============================================================ */
+let SEASONS = [];
+try {
+  const res = await fetch("robots.json", {cache:"no-cache"});
+  if (!res.ok) throw new Error(`robots.json returned ${res.status}`);
+  SEASONS = await res.json();
+  if (!Array.isArray(SEASONS) || !SEASONS.length) throw new Error("robots.json is empty");
+} catch (err) {
+  statusEl.className = "status error";
+  statusEl.textContent = location.protocol === "file:"
+    ? "Open this through a local server, not by double-clicking the file. In this folder run: python3 -m http.server 8000"
+    : `Could not load robots.json — ${err.message}. Check the JSON for a stray comma.`;
+  throw err;
+}
+
+/* ---------------- three.js scene ---------------- */
+const ALLIANCE = ["#E4002B", "#0072CE"];
+const canvas = el("view");
+const stage  = canvas.parentElement;
+
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x151B1E);
+scene.fog = new THREE.Fog(0x151B1E, 9, 22);
+
+const camera = new THREE.PerspectiveCamera(38, 16/9, .1, 100);
+camera.position.set(4.2, 2.9, 5.2);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = .06;
+controls.target.set(0, .85, 0);
+controls.minDistance = 3;
+controls.maxDistance = 12;
+controls.maxPolarAngle = Math.PI/2 - .04;
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+controls.autoRotate = !reduced;
+controls.autoRotateSpeed = .55;
+canvas.addEventListener("pointerdown", () => controls.autoRotate = false);
+
+scene.add(new THREE.HemisphereLight(0xdfe6e8, 0x2a3134, 1.0));
+const key = new THREE.DirectionalLight(0xffffff, 2.1);
+key.position.set(4, 8, 4);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = key.shadow.camera.bottom = -6;
+key.shadow.camera.right = key.shadow.camera.top = 6;
+key.shadow.bias = -0.0006;
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x8fb4d6, .8);
+rim.position.set(-5, 3, -4);
+scene.add(rim);
+
+function tileTexture(){
+  const c = document.createElement("canvas");
+  c.width = c.height = 512;
+  const x = c.getContext("2d");
+  x.fillStyle = "#8E9895"; x.fillRect(0,0,512,512);
+  for (let i=0;i<4;i++) for (let j=0;j<4;j++){
+    const s = 128, p = 5;
+    x.fillStyle = ["#9AA4A2","#95A09D","#9EA8A5","#929C9A"][(i+j)%4];
+    x.fillRect(i*s+p, j*s+p, s-p*2, s-p*2);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(2,2);
+  return t;
+}
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(16,16),
+  new THREE.MeshStandardMaterial({map:tileTexture(), roughness:.94, metalness:0})
+);
+floor.rotation.x = -Math.PI/2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+function channelTexture(){
+  const c = document.createElement("canvas");
+  c.width = 256; c.height = 64;
+  const x = c.getContext("2d");
+  const g = x.createLinearGradient(0,0,0,64);
+  g.addColorStop(0,"#D6DBD9"); g.addColorStop(.45,"#B4BAB8"); g.addColorStop(1,"#8F9694");
+  x.fillStyle = g; x.fillRect(0,0,256,64);
+  x.fillStyle = "#2E3538";
+  for (let i=0;i<8;i++){
+    x.beginPath(); x.roundRect(i*32+7, 23, 18, 18, 5); x.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+const CHANNEL = channelTexture();
+const aluMat = new THREE.MeshStandardMaterial({map:CHANNEL, roughness:.42, metalness:.75});
+const rubber = new THREE.MeshStandardMaterial({color:0x1a1d1f, roughness:.95});
+
+function bar(len, w, h, repeat){
+  const m = aluMat.clone();
+  m.map = CHANNEL.clone(); m.map.needsUpdate = true;
+  m.map.repeat.set(repeat, 1);
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(len, h, w), m);
+  mesh.castShadow = mesh.receiveShadow = true;
+  return mesh;
+}
+
+function buildStandIn(accent){
+  const g = new THREE.Group();
+  const hub = new THREE.MeshStandardMaterial({color:accent, roughness:.5, metalness:.15});
+  [-.62,.62].forEach(z=>{ const b = bar(2.2,.16,.34,3); b.position.set(0,.42,z); g.add(b); });
+  [-.9,.9].forEach(x=>{ const b = bar(1.24,.16,.3,2); b.rotation.y = Math.PI/2; b.position.set(x,.42,0); g.add(b); });
+  [[-.78,-.7],[.78,-.7],[-.78,.7],[.78,.7]].forEach(([x,z])=>{
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,.24,28), rubber);
+    tire.rotation.x = Math.PI/2; tire.position.set(x,.4,z); tire.castShadow = true; g.add(tire);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.27,20), hub);
+    cap.rotation.x = Math.PI/2; cap.position.set(x,.4,z); g.add(cap);
+  });
+  [-.5,.5].forEach(z=>{ const t = bar(1.5,.14,.26,2); t.rotation.z = Math.PI/2; t.position.set(-.15,1.3,z); g.add(t); });
+  const cross = bar(1.1,.12,.2,1); cross.rotation.y = Math.PI/2; cross.position.set(-.15,1.95,0); g.add(cross);
+  const arm = bar(.95,.13,.22,1); arm.rotation.z = -.34; arm.position.set(.42,1.62,0); g.add(arm);
+  const roller = new THREE.Mesh(new THREE.CylinderGeometry(.17,.17,1.05,20), hub);
+  roller.rotation.x = Math.PI/2; roller.position.set(.86,1.32,0); roller.castShadow = true; g.add(roller);
+  const brain = new THREE.Mesh(new THREE.BoxGeometry(.62,.16,.44),
+    new THREE.MeshStandardMaterial({color:0x23292c, roughness:.6}));
+  brain.position.set(-.15,.62,0); brain.castShadow = true; g.add(brain);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(.3,.2), new THREE.MeshBasicMaterial({color:accent}));
+  screen.rotation.x = -Math.PI/2; screen.position.set(-.15,.705,0); g.add(screen);
+  return g;
+}
+
+const loader = new GLTFLoader();
+let current = null, token = 0;
+
+function place(obj){
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3());
+  const s = 2.2 / Math.max(size.x, size.y, size.z);
+  if (isFinite(s) && s > 0 && (s < .5 || s > 2)) obj.scale.setScalar(s);
+  const b2 = new THREE.Box3().setFromObject(obj);
+  const c = b2.getCenter(new THREE.Vector3());
+  obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= b2.min.y;
+  obj.traverse(n => { if (n.isMesh) n.castShadow = n.receiveShadow = true; });
+}
+
+function show(entry, index){
+  const mine = ++token;
+  if (current){ scene.remove(current); current = null; }
+  const accent = ALLIANCE[index % 2];
+  statusEl.className = "status";
+  statusEl.hidden = false;
+  statusEl.textContent = "Loading build…";
+
+  const done = obj => {
+    if (mine !== token) return;
+    place(obj);
+    obj.rotation.y = -0.5;
+    scene.add(obj);
+    current = obj;
+    statusEl.hidden = true;
+    controls.autoRotate = !reduced;
+  };
+
+  if (!entry.model) return done(buildStandIn(accent));
+  loader.load(entry.model,
+    gltf => done(gltf.scene),
+    ev => {
+      if (mine === token && ev.lengthComputable)
+        statusEl.textContent = `Loading build… ${Math.round(ev.loaded/ev.total*100)}%`;
+    },
+    () => done(buildStandIn(accent))
+  );
+}
+
+/* ---------------- crew rendering ---------------- */
+const initialsColors = ["#3A4245","#5B6A6E","#46504F","#6A7472"];
+function avatar(student, i){
+  const li = document.createElement("li");
+  const fig = document.createElement("figure");
+  const initials = student.name.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
+  const fb = () => {
+    const d = document.createElement("div");
+    d.className = "fallback";
+    d.style.background = initialsColors[i % initialsColors.length];
+    d.textContent = initials;
+    return d;
+  };
+  if (student.photo){
+    const img = new Image();
+    img.src = student.photo; img.alt = student.name;
+    img.onerror = () => img.replaceWith(fb());
+    fig.append(img);
+  } else fig.append(fb());
+  const cap = document.createElement("figcaption");
+  cap.textContent = student.name;
+  fig.append(cap);
+  li.append(fig);
+  li.tabIndex = 0;
+  return li;
+}
+
+/* One <ul>, moved between the plate and the standalone section. */
+const crewList = el("crew");
+const mobile = matchMedia("(max-width:720px)");
+function placeCrew(){
+  (mobile.matches ? el("crew-section") : el("crew-slot")).append(crewList);
+}
+mobile.addEventListener("change", placeCrew);
+placeCrew();
+
+/* ---------------- page rendering ---------------- */
+function render(i){
+  const s = SEASONS[i];
+  crewList.replaceChildren(...s.students.map(avatar));
+  el("program").textContent = s.program;
+  el("game").textContent = s.game;
+  el("year").textContent = s.year;
+  el("team").innerHTML = `<b>Team ${s.team}</b> · ${s.record}<br><span class="award">${s.award}</span>`;
+  el("specs").replaceChildren(...Object.entries(s.specs).map(([k,v])=>{
+    const d = document.createElement("div");
+    d.innerHTML = `<dt>${k}</dt><dd>${v}</dd>`;
+    return d;
+  }));
+  el("note").textContent = s.note;
+  document.querySelectorAll(".bay").forEach((b,j)=>b.setAttribute("aria-current", j===i));
+  show(s, i);
+}
+
+const BOLT = `<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M12 2 21 7v10l-9 5-9-5V7z" fill="#C9CFCD"/>
+  <path d="M12 5.6 17.8 8.9v6.2L12 18.4 6.2 15.1V8.9z" fill="#7C8482"/></svg>`;
+
+const channel = el("channel");
+SEASONS.forEach((s,i)=>{
+  const b = document.createElement("button");
+  b.className = "bay"; b.type = "button"; b.setAttribute("role","tab");
+  b.innerHTML = `<div class="hole">${BOLT}</div><span class="lab">${s.year}</span><span class="gm">${s.game}</span>`;
+  b.addEventListener("click", ()=>render(i));
+  channel.append(b);
+});
+channel.addEventListener("keydown", e=>{
+  const bays = [...channel.querySelectorAll(".bay")];
+  const at = bays.findIndex(b=>b.getAttribute("aria-current")==="true");
+  if (e.key === "ArrowRight" && at < bays.length-1){ bays[at+1].click(); bays[at+1].focus(); }
+  if (e.key === "ArrowLeft"  && at > 0){ bays[at-1].click(); bays[at-1].focus(); }
+});
+el("count").textContent =
+  `${SEASONS.length} robots · ${SEASONS[0].year.slice(0,4)}–${SEASONS.at(-1).year.slice(-2)}`;
+
+function resize(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize);
+resize();
+
+(function loop(){
+  requestAnimationFrame(loop);
+  controls.update();
+  renderer.render(scene, camera);
+})();
+
+render(SEASONS.length - 1);
+</script>
+
+<script>
+setTimeout(()=>{
+  if (!window.__ARCHIVE_OK__){
+    const s = document.getElementById("status");
+    s.className = "status error";
+    s.textContent = "Three.js did not load — check the connection to cdn.jsdelivr.net.";
+  }
+}, 6000);
+</script>
+</body>
+</html>
