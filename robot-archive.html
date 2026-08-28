@@ -270,12 +270,13 @@ body{
 </div>
 
 <script>
-/* The submission page can only write files when you're running locally,
-   so the link is hidden on the deployed site. Delete this block (and the
-   hidden attribute on the link in the masthead) to always show it. */
+/* The submission page only works locally, so the link is hidden on the
+   deployed site. Delete this block and the `hidden` attribute on the link
+   in the masthead to show it everywhere. */
 (function(){
   const local = ["localhost","127.0.0.1","[::1]",""].includes(location.hostname);
-  if (local) document.getElementById("adminlink").hidden = false;
+  const el = document.getElementById("adminlink");
+  if (local && el) el.hidden = false;
 })();
 </script>
 
