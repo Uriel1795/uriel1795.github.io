@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .plate { fill: #12171A; }
+    .bolt  { fill: #E8EAE6; }
+    .slot  { fill: #E4002B; }
+    @media (prefers-color-scheme: dark) {
+      .plate { fill: #E8EAE6; }
+      .bolt  { fill: #12171A; }
+    }
+  </style>
+  <!-- the channel hole: rounded square, as on the season rail -->
+  <rect class="plate" x="0" y="0" width="32" height="32" rx="7"/>
+  <!-- hex bolt head -->
+  <path class="bolt" d="M16 5.5 26 11.25v11.5L16 28.5 6 22.75v-11.5z"/>
+  <!-- driver slot, in alliance red -->
+  <rect class="slot" x="12.4" y="14.6" width="7.2" height="2.8" rx="1.1"/>
+</svg>
