@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Robot Archive — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F4F2; --ink:#12171A; --ink-60:#5A6468; --rule:#C9CDC9;
+  --red:#E4002B; --blue:#0072CE; --alu:#B4BAB8; --field:#FFFFFF;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Archivo",system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 20px 80px}
+
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding-bottom:14px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap;
+}
+.mark{font-variation-settings:"wdth" 118,"wght" 800;font-size:24px;text-transform:uppercase}
+.mark em{font-style:normal;color:var(--red)}
+.mark span{
+  font-variation-settings:"wdth" 100,"wght" 500;font-size:12px;letter-spacing:.16em;
+  color:var(--ink-60);margin-left:10px;
+}
+.mono{font-family:"IBM Plex Mono",monospace}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-60);font-weight:500;margin:0 0 10px;
+}
+
+/* buttons */
+button{font:inherit;cursor:pointer;border:1.5px solid var(--ink);background:var(--ink);
+  color:var(--paper);padding:9px 16px;font-size:13.5px;
+  font-variation-settings:"wdth" 96,"wght" 600;letter-spacing:.01em}
+button:hover{background:#000}
+button.ghost{background:none;color:var(--ink)}
+button.ghost:hover{background:var(--ink);color:var(--paper)}
+button.danger{border-color:var(--red);background:none;color:var(--red)}
+button.danger:hover{background:var(--red);color:var(--paper)}
+button.tiny{padding:4px 9px;font-size:11.5px;font-family:"IBM Plex Mono",monospace}
+button:disabled{opacity:.35;cursor:not-allowed}
+
+/* project bar */
+.projbar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  margin-top:18px;padding:14px 16px;background:var(--alu);
+  border-top:1.5px solid #EDF0EE;border-bottom:1.5px solid #7E8684;
+}
+.projbar .path{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:#2A3134}
+.projbar .path b{font-weight:600}
+
+.banner{padding:14px 16px;margin-top:18px;border-left:3px solid var(--red);
+  background:#fff;font-size:14px;line-height:1.6}
+.banner[hidden]{display:none}
+.banner code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:#EEEFEC;padding:1px 5px}
+
+/* layout */
+.cols{display:grid;grid-template-columns:250px 1fr;gap:28px;margin-top:28px}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+
+/* season list */
+.list{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.list li{border-bottom:1px solid var(--rule)}
+.list button{
+  width:100%;text-align:left;background:none;color:var(--ink);border:0;
+  padding:11px 10px;display:block;
+}
+.list button:hover{background:#E7E9E5}
+.list button[aria-current="true"]{background:var(--ink);color:var(--paper)}
+.list .g{display:block;font-variation-settings:"wdth" 96,"wght" 700;font-size:14px}
+.list .y{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;opacity:.65;margin-top:2px}
+.listtools{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+
+/* form */
+fieldset{border:1px solid var(--rule);margin:0 0 22px;padding:18px}
+legend{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-60);padding:0 8px}
+label{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-60);margin:0 0 5px}
+input[type=text],textarea,select{
+  width:100%;font:inherit;font-size:14px;padding:8px 10px;background:var(--field);
+  border:1px solid var(--rule);color:var(--ink);border-radius:0;
+}
+input[type=text]:focus,textarea:focus{outline:2px solid var(--blue);outline-offset:-1px}
+textarea{min-height:78px;resize:vertical;line-height:1.55}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media (max-width:640px){.grid2,.grid3{grid-template-columns:1fr}}
+.field{margin-bottom:14px}
+.hint{font-size:12px;color:var(--ink-60);margin:5px 0 0;line-height:1.5}
+
+/* repeating rows */
+.row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+.row.student{grid-template-columns:1fr 1.3fr auto}
+@media (max-width:640px){.row,.row.student{grid-template-columns:1fr;gap:8px}}
+
+/* file drop */
+.filebox{border:1px dashed var(--rule);background:var(--field);padding:14px;display:flex;
+  gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.filebox .name{font-family:"IBM Plex Mono",monospace;font-size:12.5px;word-break:break-all}
+.filebox .name.none{color:var(--ink-60)}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  position:sticky;bottom:0;background:var(--paper);padding:16px 0;
+  border-top:1.5px solid var(--ink);margin-top:8px}
+.toast{font-family:"IBM Plex Mono",monospace;font-size:12.5px;margin-left:auto}
+.toast.ok{color:#1B7F3B}.toast.err{color:var(--red)}
+details.preview{margin-top:20px}
+details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.5;max-height:340px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark">Robot <em>Archive</em> <span>Admin</span></div>
+    <div class="mono" id="counter" style="font-size:12px;color:var(--ink-60)"></div>
+  </header>
+
+  <div class="banner" id="unsupported" hidden>
+    <b>This browser can't write files.</b> The File System Access API is Chrome/Edge only.
+    You can still fill in the form and use <b>Download robots.json</b> at the bottom, then
+    replace the file yourself and copy models into <code>models/</code> and photos into
+    <code>photos/</code> by hand.
+  </div>
+
+  <div class="projbar">
+    <button id="pick">Open project folder…</button>
+    <div class="path" id="projpath">No folder open — pick the folder containing <b>robot-archive.html</b></div>
+  </div>
+
+  <div class="cols">
+    <nav>
+      <h2 class="eyebrow">Robots</h2>
+      <ul class="list" id="list"></ul>
+      <div class="listtools">
+        <button class="ghost tiny" id="add">+ New robot</button>
+        <button class="ghost tiny" id="up" title="Move earlier">↑</button>
+        <button class="ghost tiny" id="down" title="Move later">↓</button>
+      </div>
+      <p class="hint">Order here is the order of the season rail on the site. Oldest first.</p>
+    </nav>
+
+    <main>
+      <form id="form" autocomplete="off">
+        <fieldset>
+          <legend>Season</legend>
+          <div class="grid3">
+            <div class="field">
+              <label for="f-program">Program</label>
+              <input type="text" id="f-program" placeholder="VEX IQ">
+            </div>
+            <div class="field">
+              <label for="f-game">Game</label>
+              <input type="text" id="f-game" placeholder="Rapid Relay">
+            </div>
+            <div class="field">
+              <label for="f-year">Year</label>
+              <input type="text" id="f-year" placeholder="2024–25">
+            </div>
+          </div>
+          <div class="grid3">
+            <div class="field">
+              <label for="f-team">Team</label>
+              <input type="text" id="f-team" placeholder="12345B">
+            </div>
+            <div class="field">
+              <label for="f-record">Record</label>
+              <input type="text" id="f-record" placeholder="29–3">
+            </div>
+            <div class="field">
+              <label for="f-award">Award</label>
+              <input type="text" id="f-award" placeholder="Teamwork Champion — State">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>3D model</legend>
+          <div class="filebox">
+            <div>
+              <div class="name" id="modelname">No model set</div>
+              <p class="hint" id="modelhint">Pick a .glb and it will be copied into models/ with the right name.</p>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="ghost tiny" id="pickmodel">Choose .glb…</button>
+              <button type="button" class="ghost tiny" id="clearmodel">Clear</button>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Students</legend>
+          <div id="students"></div>
+          <button type="button" class="ghost tiny" id="addstudent">+ Add student</button>
+          <p class="hint">Photos are optional — without one the site shows an initials circle.
+            Consider first name and last initial rather than full names on a public site.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Specs</legend>
+          <div id="specs"></div>
+          <button type="button" class="ghost tiny" id="addspec">+ Add spec</button>
+          <p class="hint">Four fit the strip neatly on desktop. Labels are yours to choose.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Note</legend>
+          <textarea id="f-note" placeholder="One or two sentences — what was interesting, what broke, what the team learned."></textarea>
+        </fieldset>
+      </form>
+
+      <div class="actions">
+        <button id="save">Save to project</button>
+        <button class="ghost" id="download">Download robots.json</button>
+        <button class="danger" id="del">Delete robot</button>
+        <span class="toast" id="toast"></span>
+      </div>
+
+      <details class="preview">
+        <summary class="eyebrow" style="cursor:pointer">Preview robots.json</summary>
+        <pre id="json"></pre>
+      </details>
+    </main>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SUPPORTED = "showDirectoryPicker" in window;
+if (!SUPPORTED) $("unsupported").hidden = false;
+
+let dir = null;            // project directory handle
+let data = [];             // the robots array
+let index = -1;            // selected robot
+let pendingModel = null;   // File waiting to be copied on save
+let pendingPhotos = {};    // rowId -> File
+
+const slug = s => (s || "").toLowerCase().trim()
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function toast(msg, kind=""){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast " + kind;
+  if (msg) setTimeout(()=>{ if (t.textContent === msg) t.textContent = ""; }, 5000);
+}
+
+/* ---------------- project folder ---------------- */
+$("pick").addEventListener("click", async ()=>{
+  if (!SUPPORTED) return toast("Not supported in this browser", "err");
+  try {
+    dir = await window.showDirectoryPicker({ mode:"readwrite" });
+    $("projpath").innerHTML = `Open: <b>${dir.name}/</b>`;
+    await loadJson();
+    toast(`Loaded ${data.length} robots`, "ok");
+  } catch (err) {
+    if (err.name !== "AbortError") toast(err.message, "err");
+  }
+});
+
+async function loadJson(){
+  try {
+    const fh = await dir.getFileHandle("robots.json");
+    const txt = await (await fh.getFile()).text();
+    data = JSON.parse(txt);
+    if (!Array.isArray(data)) throw new Error("robots.json is not an array");
+  } catch (err) {
+    if (err.name === "NotFoundError"){
+      data = [];
+      toast("No robots.json yet — will create one", "ok");
+    } else {
+      toast("Could not read robots.json: " + err.message, "err");
+      return;
+    }
+  }
+  index = data.length ? data.length - 1 : -1;
+  renderList(); fillForm(); renderJson();
+}
+
+/* ---------------- list ---------------- */
+function renderList(){
+  const ul = $("list");
+  ul.replaceChildren(...data.map((r,i)=>{
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("aria-current", i === index);
+    b.innerHTML = `<span class="g">${r.game || "Untitled"}</span><span class="y">${r.year || ""} · ${r.team || ""}</span>`;
+    b.addEventListener("click", ()=>{ commit(); index = i; renderList(); fillForm(); });
+    li.append(b);
+    return li;
+  }));
+  $("counter").textContent = data.length ? `${data.length} robots` : "";
+}
+
+$("add").addEventListener("click", ()=>{
+  commit();
+  data.push({ program:"VEX IQ", game:"", year:"", team:"", model:"",
+              students:[], award:"", record:"",
+              specs:{Drivetrain:"",Scoring:"",Size:"",Built:""}, note:"" });
+  index = data.length - 1;
+  renderList(); fillForm(); renderJson();
+});
+$("up").addEventListener("click", ()=>swap(-1));
+$("down").addEventListener("click", ()=>swap(1));
+function swap(d){
+  const j = index + d;
+  if (index < 0 || j < 0 || j >= data.length) return;
+  commit();
+  [data[index], data[j]] = [data[j], data[index]];
+  index = j; renderList(); renderJson();
+}
+
+/* ---------------- repeating rows ---------------- */
+function studentRow(s = {name:"", photo:""}){
+  const id = "s" + Math.random().toString(36).slice(2,8);
+  const div = document.createElement("div");
+  div.className = "row student"; div.dataset.id = id;
+  div.innerHTML = `
+    <div><label>Name</label><input type="text" class="s-name" value="${s.name||""}" placeholder="Nia W."></div>
+    <div><label>Photo</label><div class="name none s-photo">${s.photo || "none"}</div></div>
+    <div style="display:flex;gap:6px">
+      <button type="button" class="ghost tiny s-pick">Photo…</button>
+      <button type="button" class="ghost tiny s-del">×</button>
+    </div>`;
+  div.querySelector(".s-pick").addEventListener("click", async ()=>{
+    const f = await pickFile([{description:"Image", accept:{"image/*":[".jpg",".jpeg",".png",".webp"]}}]);
+    if (!f) return;
+    pendingPhotos[id] = f;
+    const el = div.querySelector(".s-photo");
+    el.textContent = f.name + "  (copies on save)";
+    el.classList.remove("none");
+  });
+  div.querySelector(".s-del").addEventListener("click", ()=>{ delete pendingPhotos[id]; div.remove(); });
+  return div;
+}
+
+function specRow(k="", v=""){
+  const div = document.createElement("div");
+  div.className = "row";
+  div.innerHTML = `
+    <div><label>Label</label><input type="text" class="k" value="${k}" placeholder="Drivetrain"></div>
+    <div><label>Value</label><input type="text" class="v" value="${v}" placeholder="6-wheel tank"></div>
+    <button type="button" class="ghost tiny k-del">×</button>`;
+  div.querySelector(".k-del").addEventListener("click", ()=>div.remove());
+  return div;
+}
+$("addstudent").addEventListener("click", ()=>$("students").append(studentRow()));
+$("addspec").addEventListener("click", ()=>$("specs").append(specRow()));
+
+/* ---------------- file pickers ---------------- */
+async function pickFile(types){
+  if (SUPPORTED){
+    try {
+      const [h] = await window.showOpenFilePicker({ types, multiple:false });
+      return await h.getFile();
+    } catch (err) { if (err.name !== "AbortError") toast(err.message, "err"); return null; }
+  }
+  return new Promise(res=>{
+    const i = document.createElement("input");
+    i.type = "file";
+    i.onchange = ()=>res(i.files[0] || null);
+    i.click();
+  });
+}
+
+$("pickmodel").addEventListener("click", async ()=>{
+  const f = await pickFile([{description:"glTF binary", accept:{"model/gltf-binary":[".glb"]}}]);
+  if (!f) return;
+  pendingModel = f;
+  const target = modelFilename();
+  $("modelname").textContent = `models/${target}`;
+  $("modelhint").textContent = `${f.name} → copies to models/${target} on save (${(f.size/1048576).toFixed(1)} MB)`;
+  if (f.size > 8 * 1048576)
+    toast("That model is over 8 MB — consider optimizing it first", "err");
+});
+$("clearmodel").addEventListener("click", ()=>{
+  pendingModel = null;
+  $("modelname").textContent = "No model set";
+  $("modelhint").textContent = "The site falls back to a stand-in robot when no model is set.";
+});
+
+function modelFilename(){
+  const y = ($("f-year").value || "").slice(0,4) || "robot";
+  const g = slug($("f-game").value) || "untitled";
+  return `${y}-${g}.glb`;
+}
+
+/* ---------------- form <-> data ---------------- */
+function fillForm(){
+  const r = data[index] || {};
+  $("f-program").value = r.program || "";
+  $("f-game").value    = r.game || "";
+  $("f-year").value    = r.year || "";
+  $("f-team").value    = r.team || "";
+  $("f-record").value  = r.record || "";
+  $("f-award").value   = r.award || "";
+  $("f-note").value    = r.note || "";
+
+  pendingModel = null; pendingPhotos = {};
+  $("modelname").textContent = r.model || "No model set";
+  $("modelhint").textContent = r.model
+    ? "Choose a new .glb to replace it."
+    : "The site falls back to a stand-in robot when no model is set.";
+
+  $("students").replaceChildren(...(r.students || []).map(studentRow));
+  const specs = Object.entries(r.specs || {});
+  $("specs").replaceChildren(...(specs.length ? specs : [["",""]]).map(([k,v])=>specRow(k,v)));
+}
+
+function commit(){
+  if (index < 0) return;
+  const r = data[index];
+  r.program = $("f-program").value.trim();
+  r.game    = $("f-game").value.trim();
+  r.year    = $("f-year").value.trim();
+  r.team    = $("f-team").value.trim();
+  r.record  = $("f-record").value.trim();
+  r.award   = $("f-award").value.trim();
+  r.note    = $("f-note").value.trim();
+
+  r.students = [...$("students").children].map(div=>{
+    const name = div.querySelector(".s-name").value.trim();
+    const id = div.dataset.id;
+    const s = { name };
+    if (pendingPhotos[id]){
+      const ext = pendingPhotos[id].name.split(".").pop().toLowerCase();
+      s.photo = `photos/${slug(name) || id}.${ext}`;
+    } else {
+      const shown = div.querySelector(".s-photo").textContent;
+      if (shown && shown !== "none" && shown.startsWith("photos/")) s.photo = shown;
+    }
+    return s;
+  }).filter(s=>s.name);
+
+  r.specs = {};
+  [...$("specs").children].forEach(div=>{
+    const k = div.querySelector(".k").value.trim();
+    const v = div.querySelector(".v").value.trim();
+    if (k) r.specs[k] = v;
+  });
+
+  if (pendingModel) r.model = `models/${modelFilename()}`;
+}
+
+/* ---------------- writing ---------------- */
+async function writeInto(dirName, filename, file){
+  const d = await dir.getDirectoryHandle(dirName, { create:true });
+  const fh = await d.getFileHandle(filename, { create:true });
+  const w = await fh.createWritable();
+  await w.write(await file.arrayBuffer());
+  await w.close();
+}
+
+$("save").addEventListener("click", async ()=>{
+  commit(); renderList(); renderJson();
+  if (!dir) return toast("Open the project folder first", "err");
+
+  const r = data[index];
+  if (!r.game || !r.year) return toast("Game and Year are required", "err");
+
+  try {
+    if (pendingModel){
+      await writeInto("models", modelFilename(), pendingModel);
+      pendingModel = null;
+    }
+    for (const [id, file] of Object.entries(pendingPhotos)){
+      const row = $("students").querySelector(`[data-id="${id}"]`);
+      const name = row ? row.querySelector(".s-name").value.trim() : id;
+      const ext = file.name.split(".").pop().toLowerCase();
+      await writeInto("photos", `${slug(name) || id}.${ext}`, file);
+    }
+    pendingPhotos = {};
+
+    const fh = await dir.getFileHandle("robots.json", { create:true });
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(data, null, 2) + "\n");
+    await w.close();
+
+    fillForm();
+    toast("Saved — commit and push when ready", "ok");
+  } catch (err) {
+    toast("Save failed: " + err.message, "err");
+  }
+});
+
+$("download").addEventListener("click", ()=>{
+  commit(); renderJson();
+  const blob = new Blob([JSON.stringify(data, null, 2) + "\n"], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "robots.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("Downloaded — model and photo files still need copying by hand", "ok");
+});
+
+$("del").addEventListener("click", ()=>{
+  if (index < 0) return;
+  const r = data[index];
+  if (!confirm(`Delete "${r.game || "Untitled"} ${r.year || ""}"?\n\nThis edits robots.json only — the .glb and photos stay on disk.`)) return;
+  data.splice(index, 1);
+  index = Math.min(index, data.length - 1);
+  renderList(); fillForm(); renderJson();
+  toast("Removed — press Save to write it out", "ok");
+});
+
+function renderJson(){ $("json").textContent = JSON.stringify(data, null, 2); }
+
+$("form").addEventListener("input", ()=>{ commit(); renderJson(); renderList(); });
+renderList(); fillForm();
+</script>
+</body>
+</html>
