@@ -111,6 +111,26 @@ textarea{min-height:78px;resize:vertical;line-height:1.55}
 .filebox .name{font-family:"IBM Plex Mono",monospace;font-size:12.5px;word-break:break-all}
 .filebox .name.none{color:var(--ink-60)}
 
+.menuwrap{position:relative;display:inline-block}
+.specmenu{
+  position:absolute;top:calc(100% + 6px);left:0;z-index:20;min-width:210px;
+  background:var(--field);border:1.5px solid var(--ink);
+  box-shadow:0 14px 34px rgba(0,0,0,.22);padding:5px;
+  max-height:290px;overflow:auto;
+}
+.specmenu[hidden]{display:none}
+.specmenu button{
+  display:block;width:100%;text-align:left;background:none;color:var(--ink);
+  border:0;padding:7px 10px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;
+  letter-spacing:.02em;
+}
+.specmenu button:hover,.specmenu button:focus-visible{background:var(--ink);color:var(--paper);outline:none}
+.specmenu .sep{
+  border-top:1px solid var(--rule);margin:5px 0;padding-top:5px;
+}
+.specmenu .none{
+  padding:9px 10px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-60);
+}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;
   position:sticky;bottom:0;background:var(--paper);padding:16px 0;
   border-top:1.5px solid var(--ink);margin-top:8px}
@@ -156,26 +176,43 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
     <main>
       <form id="form" autocomplete="off">
         <fieldset>
+          <legend>Team</legend>
+          <div class="grid2">
+            <div class="field">
+              <label for="f-team">Team number *</label>
+              <input type="text" id="f-team" placeholder="34Q or 4610A" autofocus>
+              <p class="hint" id="teamhint"></p>
+            </div>
+            <div class="field">
+              <label for="f-teamname">Team name</label>
+              <input type="text" id="f-teamname" placeholder="Gear Grinders">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
           <legend>Season</legend>
           <div class="grid3">
             <div class="field">
-              <label for="f-program">Program</label>
-              <input type="text" id="f-program" placeholder="VEX IQ">
+              <label for="f-year">Year *</label>
+              <input type="text" id="f-year" placeholder="2024 or 2024-25">
             </div>
             <div class="field">
-              <label for="f-game">Game</label>
-              <input type="text" id="f-game" placeholder="Rapid Relay">
+              <label for="f-program">Program (auto)</label>
+              <input type="text" id="f-program" placeholder="from team number">
             </div>
             <div class="field">
-              <label for="f-year">Year</label>
-              <input type="text" id="f-year" placeholder="2024–25">
+              <label for="f-game">Game (auto)</label>
+              <input type="text" id="f-game" placeholder="from year" list="games">
+              <datalist id="games"></datalist>
             </div>
           </div>
-          <div class="grid3">
-            <div class="field">
-              <label for="f-team">Team</label>
-              <input type="text" id="f-team" placeholder="12345B">
-            </div>
+          <p class="hint" id="seasonhint"></p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Result</legend>
+          <div class="grid2">
             <div class="field">
               <label for="f-record">Record</label>
               <input type="text" id="f-record" placeholder="29–3">
@@ -202,6 +239,38 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
         </fieldset>
 
         <fieldset>
+          <legend>Judges notebook</legend>
+          <div class="filebox">
+            <div>
+              <div class="name" id="nbname">No notebook set</div>
+              <p class="hint" id="nbhint">A PDF of the team's engineering notebook. Copied into notebooks/.</p>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="ghost tiny" id="picknb">Choose PDF…</button>
+              <button type="button" class="ghost tiny" id="clearnb">Clear</button>
+            </div>
+          </div>
+          <div class="grid2" style="margin-top:14px">
+            <div class="field">
+              <label for="f-nbpages">Pages</label>
+              <input type="text" id="f-nbpages" placeholder="62">
+            </div>
+            <div class="field">
+              <label for="f-nbnote">Notebook note</label>
+              <input type="text" id="f-nbnote" placeholder="Design Award — State">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Mementos</legend>
+          <div id="mementos"></div>
+          <button type="button" class="ghost tiny" id="addmemento">+ Add memento</button>
+          <p class="hint">Group photos, earlier versions of the robot, pit shots — anything
+            the team is happy to have shown. Each one can carry a caption.</p>
+        </fieldset>
+
+        <fieldset>
           <legend>Students</legend>
           <div id="students"></div>
           <button type="button" class="ghost tiny" id="addstudent">+ Add student</button>
@@ -212,7 +281,12 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
         <fieldset>
           <legend>Specs</legend>
           <div id="specs"></div>
-          <button type="button" class="ghost tiny" id="addspec">+ Add spec</button>
+          <div class="menuwrap">
+            <button type="button" class="ghost tiny" id="addspec" aria-haspopup="true"
+                    aria-expanded="false">+ Add spec</button>
+            <div class="specmenu" id="specmenu" role="menu" hidden></div>
+          </div>
+          <datalist id="speclabels"></datalist>
           <p class="hint">Four fit the strip neatly on desktop. Labels are yours to choose.</p>
         </fieldset>
 
@@ -310,7 +384,7 @@ $("add").addEventListener("click", ()=>{
   commit();
   data.push({ program:"VEX IQ", game:"", year:"", team:"", model:"",
               students:[], award:"", record:"",
-              specs:{Drivetrain:"",Scoring:"",Size:"",Built:""}, note:"" });
+              specs:{}, note:"" });
   index = data.length - 1;
   renderList(); fillForm(); renderJson();
 });
@@ -348,18 +422,118 @@ function studentRow(s = {name:"", photo:""}){
   return div;
 }
 
+function mementoRow(m = {image:"", caption:""}){
+  const id = "m" + Math.random().toString(36).slice(2,8);
+  const div = document.createElement("div");
+  div.className = "row student"; div.dataset.id = id;
+  div.innerHTML = `
+    <div><label>Image</label><div class="name none m-file">${m.image || "none"}</div></div>
+    <div><label>Caption</label><input type="text" class="m-cap" value="${(m.caption||"").replace(/"/g,"&quot;")}" placeholder="State qualifier, February 2025"></div>
+    <div style="display:flex;gap:6px">
+      <button type="button" class="ghost tiny m-pick">Image…</button>
+      <button type="button" class="ghost tiny m-del">×</button>
+    </div>`;
+  div.querySelector(".m-pick").addEventListener("click", async ()=>{
+    const file = await pickFile([{description:"Image", accept:{"image/*":[".jpg",".jpeg",".png",".webp"]}}]);
+    if (!file) return;
+    pendingMementos[id] = file;
+    const el2 = div.querySelector(".m-file");
+    el2.textContent = file.name + "  (copies on save)";
+    el2.classList.remove("none");
+  });
+  div.querySelector(".m-del").addEventListener("click", ()=>{ delete pendingMementos[id]; div.remove(); });
+  return div;
+}
+$("addmemento").addEventListener("click", ()=>$("mementos").append(mementoRow()));
+
 function specRow(k="", v=""){
   const div = document.createElement("div");
   div.className = "row";
   div.innerHTML = `
-    <div><label>Label</label><input type="text" class="k" value="${k}" placeholder="Drivetrain"></div>
+    <div><label>Label</label><input type="text" class="k" value="${k}" placeholder="Drivetrain" list="speclabels"></div>
     <div><label>Value</label><input type="text" class="v" value="${v}" placeholder="6-wheel tank"></div>
     <button type="button" class="ghost tiny k-del">×</button>`;
   div.querySelector(".k-del").addEventListener("click", ()=>div.remove());
   return div;
 }
 $("addstudent").addEventListener("click", ()=>$("students").append(studentRow()));
-$("addspec").addEventListener("click", ()=>$("specs").append(specRow()));
+/* Suggested spec labels. Shared list first, then the ones that only make
+   sense for one program. Edit freely — the label field stays free text. */
+const SPEC_LABELS = {
+  common: ["Drivetrain","Wheels","Gear ratio","Motors","Scoring","Intake",
+           "Lift","Sensors","Size","Weight","Coded in","Built"],
+  "VEX V5": ["Pneumatics","Drive RPM"],
+  "VEX IQ": ["Brain ports used"]
+};
+
+function usedLabels(){
+  return new Set([...$("specs").querySelectorAll(".k")]
+    .map(i => i.value.trim().toLowerCase()).filter(Boolean));
+}
+
+function suggestions(){
+  const prog = $("f-program").value.trim();
+  return [...SPEC_LABELS.common, ...(SPEC_LABELS[prog] || [])];
+}
+
+/* keep the datalist on existing rows in step with the program */
+function refreshSpecLabels(){
+  $("speclabels").replaceChildren(...suggestions().map(l=>{
+    const o = document.createElement("option"); o.value = l; return o;
+  }));
+}
+
+function addSpec(label){
+  const row = specRow(label || "", "");
+  $("specs").append(row);
+  row.querySelector(label ? ".v" : ".k").focus();
+  closeSpecMenu();
+}
+
+function openSpecMenu(){
+  const menu = $("specmenu");
+  const used = usedLabels();
+  const free = suggestions().filter(l => !used.has(l.toLowerCase()));
+
+  menu.replaceChildren();
+  if (free.length){
+    free.forEach(l=>{
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = l; b.setAttribute("role","menuitem");
+      b.addEventListener("click", ()=>addSpec(l));
+      menu.append(b);
+    });
+  } else {
+    const p = document.createElement("p");
+    p.className = "none"; p.textContent = "All suggestions used.";
+    menu.append(p);
+  }
+  const custom = document.createElement("button");
+  custom.type = "button"; custom.className = "sep"; custom.textContent = "Custom label\u2026";
+  custom.setAttribute("role","menuitem");
+  custom.addEventListener("click", ()=>addSpec(""));
+  menu.append(custom);
+
+  menu.hidden = false;
+  $("addspec").setAttribute("aria-expanded","true");
+  menu.querySelector("button")?.focus();
+}
+
+function closeSpecMenu(){
+  $("specmenu").hidden = true;
+  $("addspec").setAttribute("aria-expanded","false");
+}
+
+$("addspec").addEventListener("click", e=>{
+  e.stopPropagation();
+  $("specmenu").hidden ? openSpecMenu() : closeSpecMenu();
+});
+document.addEventListener("click", e=>{
+  if (!e.target.closest(".menuwrap")) closeSpecMenu();
+});
+document.addEventListener("keydown", e=>{
+  if (e.key === "Escape" && !$("specmenu").hidden){ closeSpecMenu(); $("addspec").focus(); }
+});
 
 /* ---------------- file pickers ---------------- */
 async function pickFile(types){
@@ -393,10 +567,171 @@ $("clearmodel").addEventListener("click", ()=>{
   $("modelhint").textContent = "The site falls back to a stand-in robot when no model is set.";
 });
 
+/* Team-number format tells us the program:
+   two digits + letter  -> VEX IQ      (34Q)
+   four digits + letter -> VEX V5      (4610A)
+   Anything else is left alone for you to fill in by hand. */
+function programFor(team){
+  const t = (team || "").trim().toUpperCase();
+  if (/^\d{1,3}[A-Z]$/.test(t))  return "VEX IQ";
+  if (/^\d{4,5}[A-Z]$/.test(t)) return "VEX V5";
+  return null;
+}
+
+function syncProgram(){
+  const team = $("f-team").value;
+  const guess = programFor(team);
+  const hint = $("teamhint");
+  const prog = $("f-program");
+
+  if (!team.trim()){ hint.textContent = ""; return; }
+  if (!guess){
+    hint.textContent = "Unrecognised format — set the program yourself.";
+    hint.style.color = "var(--red)";
+    return;
+  }
+  hint.style.color = "";
+  if (!prog.value.trim() || programFor(prog.dataset.forTeam || "") === prog.value){
+    prog.value = guess;           // only overwrite what we filled in ourselves
+  }
+  prog.dataset.forTeam = team;
+  hint.textContent = prog.value === guess
+    ? `Detected ${guess}.`
+    : `Team format suggests ${guess}, but program is set to "${prog.value}".`;
+}
+
+
+/* ---- Season tables --------------------------------------------------
+   Keyed on the starting year. Verified against the official V5RC and
+   VIQRC competition histories. VIQRC entries before 2019-20 are from
+   memory rather than a checked source — worth confirming if you backfill
+   that far. Add a row here each new season. */
+const GAMES = {
+  "VEX V5": {
+    "2007":"Bridge Battle","2008":"Elevation","2009":"Clean Sweep","2010":"Round Up",
+    "2011":"Gateway","2012":"Sack Attack","2013":"Toss Up","2014":"Skyrise",
+    "2015":"Nothing But Net","2016":"Starstruck","2017":"In the Zone",
+    "2018":"Turning Point","2019":"Tower Takeover","2020":"Change Up",
+    "2021":"Tipping Point","2022":"Spin Up","2023":"Over Under",
+    "2024":"High Stakes","2025":"Push Back","2026":"Override"
+  },
+  "VEX IQ": {
+    "2013":"Add It Up","2014":"Highrise","2015":"Bank Shot","2016":"Crossover",
+    "2017":"Ringmaster","2018":"Next Level","2019":"Squared Away","2020":"Rise Above",
+    "2021":"Pitching In","2022":"Slapshot","2023":"Full Volume",
+    "2024":"Rapid Relay","2025":"Mix & Match","2026":"Level Up"
+  }
+};
+
+/* "2021", "2021-22", "2021-2022", "2021\u201322" all mean the same season. */
+function startYear(v){
+  const m = String(v || "").match(/\b(19|20)\d{2}\b/);
+  return m ? m[0] : null;
+}
+function prettyYear(y){
+  return y ? `${y}\u2013${String(Number(y) + 1).slice(2)}` : "";
+}
+function findGame(name){
+  const n = (name || "").trim().toLowerCase();
+  if (!n) return null;
+  for (const [prog, years] of Object.entries(GAMES))
+    for (const [y, g] of Object.entries(years))
+      if (g.toLowerCase() === n) return { program: prog, year: y };
+  return null;
+}
+
+/* Offer that program's games as suggestions in the Game field. */
+function refreshGameList(){
+  const prog = $("f-program").value.trim();
+  const dl = $("games");
+  const years = GAMES[prog];
+  dl.replaceChildren(...(years
+    ? Object.entries(years).sort((a,b)=>b[0].localeCompare(a[0]))
+        .map(([y,g])=>{ const o = document.createElement("option");
+                        o.value = g; o.label = prettyYear(y); return o; })
+    : []));
+}
+
+/* year (+ program) -> game */
+function fillGameFromYear(){
+  const prog = $("f-program").value.trim();
+  const y = startYear($("f-year").value);
+  const game = $("f-game");
+  if (y) $("f-year").dataset.canonical = prettyYear(y);
+  if (!y || !GAMES[prog]) return;
+  const expect = GAMES[prog][y];
+  if (!expect) return;
+  const auto = !game.value.trim() || game.dataset.auto === game.value;
+  if (auto){ game.value = expect; game.dataset.auto = expect; }
+  seasonNote();
+}
+
+/* game -> year (+ program) */
+function fillYearFromGame(){
+  const hit = findGame($("f-game").value);
+  if (!hit) { seasonNote(); return; }
+  const yr = $("f-year"), prog = $("f-program");
+  if (!yr.value.trim() || yr.dataset.auto === yr.value){
+    yr.value = prettyYear(hit.year); yr.dataset.auto = yr.value;
+  }
+  if (!prog.value.trim() || prog.dataset.auto === prog.value){
+    prog.value = hit.program; prog.dataset.auto = hit.program;
+    refreshGameList();
+  }
+  seasonNote();
+}
+
+/* Flag a game that doesn't belong to the year/program actually entered. */
+function seasonNote(){
+  const note = $("seasonhint");
+  const prog = $("f-program").value.trim();
+  const y = startYear($("f-year").value);
+  const game = $("f-game").value.trim();
+  if (!game || !y || !GAMES[prog]){ note.textContent = ""; return; }
+  const expect = GAMES[prog][y];
+  if (!expect){ note.textContent = `No ${prog} season on file for ${prettyYear(y)}.`;
+                note.style.color = "var(--red)"; return; }
+  if (expect.toLowerCase() === game.toLowerCase()){
+    note.textContent = `${prog} ${prettyYear(y)} \u2014 ${expect}.`;
+    note.style.color = "";
+  } else {
+    const hit = findGame(game);
+    note.textContent = hit
+      ? `"${game}" is ${hit.program} ${prettyYear(hit.year)}, not ${prog} ${prettyYear(y)}.`
+      : `${prog} ${prettyYear(y)} was ${expect}.`;
+    note.style.color = "var(--red)";
+  }
+}
+
+function notebookFilename(){
+  const y = ($("f-year").value || "").slice(0,4) || "year";
+  const t = slug($("f-team").value) || "team";
+  return `${t}-${y}.pdf`;
+}
+function mementoFilename(i, file){
+  const y = ($("f-year").value || "").slice(0,4) || "year";
+  const t = slug($("f-team").value) || "team";
+  const ext = file.name.split(".").pop().toLowerCase();
+  return `${t}-${y}-${i+1}.${ext}`;
+}
+
+$("picknb").addEventListener("click", async ()=>{
+  const file = await pickFile([{description:"PDF", accept:{"application/pdf":[".pdf"]}}]);
+  if (!file) return;
+  pendingNotebook = file;
+  $("nbname").textContent = `notebooks/${notebookFilename()}`;
+  $("nbhint").textContent = `${file.name} → copies on save (${(file.size/1048576).toFixed(1)} MB)`;
+});
+$("clearnb").addEventListener("click", ()=>{
+  pendingNotebook = null;
+  $("nbname").textContent = "No notebook set";
+  $("nbhint").textContent = "A PDF of the team's engineering notebook. Copied into notebooks/.";
+});
+
 function modelFilename(){
-  const y = ($("f-year").value || "").slice(0,4) || "robot";
-  const g = slug($("f-game").value) || "untitled";
-  return `${y}-${g}.glb`;
+  const y = ($("f-year").value || "").slice(0,4) || "year";
+  const t = slug($("f-team").value) || "team";
+  return `${t}-${y}.glb`;   // unique per team per season
 }
 
 /* ---------------- form <-> data ---------------- */
@@ -405,7 +740,8 @@ function fillForm(){
   $("f-program").value = r.program || "";
   $("f-game").value    = r.game || "";
   $("f-year").value    = r.year || "";
-  $("f-team").value    = r.team || "";
+  $("f-team").value     = r.team || "";
+  $("f-teamname").value = r.teamName || "";
   $("f-record").value  = r.record || "";
   $("f-award").value   = r.award || "";
   $("f-note").value    = r.note || "";
@@ -416,9 +752,25 @@ function fillForm(){
     ? "Choose a new .glb to replace it."
     : "The site falls back to a stand-in robot when no model is set.";
 
+  pendingNotebook = null; pendingMementos = {};
+  const nb = typeof r.notebook === "string" ? {file:r.notebook} : (r.notebook || {});
+  $("nbname").textContent = nb.file || "No notebook set";
+  $("nbhint").textContent = nb.file
+    ? "Choose a new PDF to replace it."
+    : "A PDF of the team's engineering notebook. Copied into notebooks/.";
+  $("f-nbpages").value = nb.pages || "";
+  $("f-nbnote").value  = nb.note || "";
+  $("mementos").replaceChildren(...(r.mementos || [])
+    .map(m => typeof m === "string" ? {image:m} : m).map(mementoRow));
+
   $("students").replaceChildren(...(r.students || []).map(studentRow));
   const specs = Object.entries(r.specs || {});
-  $("specs").replaceChildren(...(specs.length ? specs : [["",""]]).map(([k,v])=>specRow(k,v)));
+  $("specs").replaceChildren(...specs.map(([k,v])=>specRow(k,v)));
+  $("f-program").dataset.forTeam = r.team || "";
+  syncProgram();
+  refreshGameList();
+  refreshSpecLabels();
+  seasonNote();
 }
 
 function commit(){
@@ -428,6 +780,7 @@ function commit(){
   r.game    = $("f-game").value.trim();
   r.year    = $("f-year").value.trim();
   r.team    = $("f-team").value.trim();
+  r.teamName = $("f-teamname").value.trim();
   r.record  = $("f-record").value.trim();
   r.award   = $("f-award").value.trim();
   r.note    = $("f-note").value.trim();
@@ -454,6 +807,29 @@ function commit(){
   });
 
   if (pendingModel) r.model = `models/${modelFilename()}`;
+
+  const nbFile = pendingNotebook ? `notebooks/${notebookFilename()}`
+    : (typeof r.notebook === "string" ? r.notebook : (r.notebook && r.notebook.file));
+  const nbPages = $("f-nbpages").value.trim();
+  const nbNote  = $("f-nbnote").value.trim();
+  if (nbFile){
+    r.notebook = { file: nbFile };
+    if (nbPages) r.notebook.pages = Number(nbPages) || nbPages;
+    if (nbNote)  r.notebook.note = nbNote;
+  } else delete r.notebook;
+
+  r.mementos = [...$("mementos").children].map((div, i) => {
+    const id = div.dataset.id;
+    const caption = div.querySelector(".m-cap").value.trim();
+    let image;
+    if (pendingMementos[id]) image = `mementos/${mementoFilename(i, pendingMementos[id])}`;
+    else {
+      const shown = div.querySelector(".m-file").textContent;
+      if (shown.startsWith("mementos/")) image = shown;
+    }
+    return image ? (caption ? { image, caption } : { image }) : null;
+  }).filter(Boolean);
+  if (!r.mementos.length) delete r.mementos;
 }
 
 /* ---------------- writing ---------------- */
@@ -470,12 +846,30 @@ $("save").addEventListener("click", async ()=>{
   if (!dir) return toast("Open the project folder first", "err");
 
   const r = data[index];
-  if (!r.game || !r.year) return toast("Game and Year are required", "err");
+  if (!r.team || !r.game || !r.year)
+      return toast("Team number, Game and Year are all required", "err");
+
+  const clash = data.some((o,i) => i !== index &&
+      (o.team||"").toLowerCase() === r.team.toLowerCase() &&
+      (o.year||"").slice(0,4) === (r.year||"").slice(0,4));
+  if (clash) return toast(`Team ${r.team} already has a robot for ${r.year}`, "err");
 
   try {
     if (pendingModel){
       await writeInto("models", modelFilename(), pendingModel);
       pendingModel = null;
+    }
+    if (pendingNotebook){
+      await writeInto("notebooks", notebookFilename(), pendingNotebook);
+      pendingNotebook = null;
+    }
+    {
+      const rows = [...$("mementos").children];
+      for (let i = 0; i < rows.length; i++){
+        const file = pendingMementos[rows[i].dataset.id];
+        if (file) await writeInto("mementos", mementoFilename(i, file), file);
+      }
+      pendingMementos = {};
     }
     for (const [id, file] of Object.entries(pendingPhotos)){
       const row = $("students").querySelector(`[data-id="${id}"]`);
@@ -520,6 +914,14 @@ $("del").addEventListener("click", ()=>{
 
 function renderJson(){ $("json").textContent = JSON.stringify(data, null, 2); }
 
+$("f-team").addEventListener("input", ()=>{ syncProgram(); refreshGameList(); refreshSpecLabels(); fillGameFromYear(); });
+$("f-year").addEventListener("input", fillGameFromYear);
+$("f-game").addEventListener("input", fillYearFromGame);
+$("f-year").addEventListener("blur", ()=>{
+  const y = startYear($("f-year").value);
+  if (y) $("f-year").value = prettyYear(y);   // normalise on the way out
+  commit(); renderJson(); renderList();
+});
 $("form").addEventListener("input", ()=>{ commit(); renderJson(); renderList(); });
 renderList(); fillForm();
 </script>

@@ -43,14 +43,28 @@ body{
   font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;
   text-transform:uppercase;text-decoration:none;color:var(--ink);
   border:1.5px solid var(--ink);padding:6px 12px;white-space:nowrap;
-  transition:background .15s ease,color .15s ease;
 }
 .adminlink:hover{background:var(--ink);color:var(--paper)}
 .adminlink[hidden]{display:none}
 
-.lede{
-  margin:22px 0 0;max-width:56ch;font-size:15.5px;line-height:1.65;color:var(--ink-60);
+.lede{margin:22px 0 0;font-size:17px;line-height:1.65;color:var(--ink-60)}
+@media (max-width:620px){
+  .lede{font-size:16px}
+  .lede .wide-only{display:none}
 }
+
+/* ---------- search ---------- */
+.searchbar{
+  position:sticky;top:0;z-index:5;background:var(--paper);
+  padding:18px 0 14px;margin-top:20px;border-bottom:1.5px solid var(--ink);
+  display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+}
+#q{
+  flex:1 1 280px;font:inherit;font-size:15px;padding:10px 12px;
+  background:#fff;border:1px solid var(--rule);border-radius:0;color:var(--ink);
+}
+#q:focus{outline:2px solid var(--blue);outline-offset:-1px}
+.hits{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-60);white-space:nowrap}
 
 .status{
   margin:40px 0;font-family:"IBM Plex Mono",monospace;font-size:13px;
@@ -59,67 +73,91 @@ body{
 .status.error{color:var(--red)}
 .status[hidden]{display:none}
 
-/* ---------- roster grid ---------- */
-.roster{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
-  gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:32px;
+/* ---------- season sections ---------- */
+.season{margin-top:40px}
+.season[hidden]{display:none}
+.season > h2{
+  display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid var(--rule);
 }
-.card{
-  background:var(--paper);padding:22px 22px 24px;display:flex;flex-direction:column;
-  transition:background .15s ease;
+.season .game{
+  font-variation-settings:"wdth" 110,"wght" 800;
+  font-size:clamp(22px,2.6vw,30px);letter-spacing:-.02em;text-transform:uppercase;
 }
-.card:hover{background:#EAECE8}
+.season .yr{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.14em;
+  color:var(--ink-60);font-weight:500;
+}
+.season .n{
+  margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  color:var(--ink-60);
+}
 
-.card .season{
-  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ink-60);margin:0 0 10px;
+.teams{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));
+  gap:1px;background:var(--rule);border:1px solid var(--rule);
 }
-.card .team{margin:0;line-height:1}
+.card{background:var(--paper);padding:16px 16px 18px;display:flex;flex-direction:column}
+.card[hidden]{display:none}
+.card:hover{background:#EAECE8;cursor:pointer}
+
+.card .team{margin:0;line-height:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card .badge{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:#2A3134;background:var(--alu);
+  padding:3px 7px;white-space:nowrap;
+  border-top:1px solid #EDF0EE;border-bottom:1px solid #7E8684;
+}
+.card .also{
+  margin:8px 0 0;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  color:var(--ink-60);line-height:1.5;
+}
 .card .team a{
-  font-variation-settings:"wdth" 112,"wght" 800;
-  font-size:clamp(26px,3vw,36px);letter-spacing:-.02em;text-transform:uppercase;
-  color:var(--ink);text-decoration:none;display:inline-block;
-  border-bottom:3px solid transparent;transition:border-color .15s ease,color .15s ease;
+  font-variation-settings:"wdth" 108,"wght" 800;
+  font-size:26px;letter-spacing:-.02em;text-transform:uppercase;
+  color:var(--ink);text-decoration:none;
+  border-bottom:3px solid transparent;
 }
-.card .team a:hover,.card .team a:focus-visible{border-color:var(--red);color:var(--red)}
+.card:hover .team a,.card .team a:focus-visible{border-color:var(--red);color:var(--red)}
 .card .team a:focus-visible{outline:none}
-
-.card .game{
-  margin:10px 0 0;font-variation-settings:"wdth" 96,"wght" 600;font-size:16px;
+.card .tname{
+  margin:6px 0 0;font-variation-settings:"wdth" 96,"wght" 600;font-size:13.5px;
 }
 .card .award{
-  margin:6px 0 0;font-family:"IBM Plex Mono",monospace;font-size:12px;
+  margin:6px 0 0;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
   color:var(--red);line-height:1.5;
 }
-.card .record{color:var(--ink-60)}
+.card .award .record{color:var(--ink-60)}
 
 .crew{
-  list-style:none;margin:18px 0 0;padding:16px 0 0;border-top:1px solid var(--rule);
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:14px 10px;
+  list-style:none;margin:14px 0 0;padding:12px 0 0;border-top:1px solid var(--rule);
+  display:flex;flex-wrap:wrap;gap:6px;
 }
-.crew figure{margin:0}
+.crew li{position:relative}
 .crew img,.crew .fallback{
-  display:block;width:56px;height:56px;border-radius:50%;object-fit:cover;
-  border:2.5px solid var(--paper);background:var(--tile);margin:0 auto 7px;
+  display:block;width:38px;height:38px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--paper);background:var(--tile);
 }
 .crew .fallback{
   display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;
-  font-size:16px;font-weight:600;color:var(--paper);
+  font-size:12px;font-weight:600;color:var(--paper);
 }
-.crew figcaption{
-  font-family:"IBM Plex Mono",monospace;font-size:11px;line-height:1.35;
-  text-align:center;word-break:break-word;
+.crew .cap{
+  position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);
+  white-space:nowrap;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  background:var(--ink);color:var(--paper);padding:3px 6px;opacity:0;
+  pointer-events:none;transition:opacity .15s ease;z-index:4;
 }
+.crew li:hover .cap,.crew li:focus-within .cap{opacity:1}
 
-.card .view{
-  margin-top:auto;padding-top:18px;
-  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--ink-60);
+.empty{
+  margin:60px 0;font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-60);
 }
+.empty[hidden]{display:none}
 
 footer{
-  margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
-  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);
+  margin-top:48px;padding-top:18px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);line-height:1.7;
 }
 </style>
 </head>
@@ -135,19 +173,22 @@ footer{
   </header>
 
   <p class="lede">Every robot built by the program, season by season, with the students
-    who built it. Pick a team to see its robot in 3D.</p>
+    who built it. <span class="wide-only">Pick a team to see its robot in 3D.</span></p>
+
+  <div class="searchbar">
+    <input type="search" id="q" placeholder="Search team number, name, student, or season…"
+           autocomplete="off" spellcheck="false">
+    <span class="hits" id="hits"></span>
+  </div>
 
   <p class="status" id="status">Loading roster…</p>
-
-  <div class="roster" id="roster"></div>
+  <div id="sections"></div>
+  <p class="empty" id="empty" hidden>No teams match that search.</p>
 
   <footer id="foot"></footer>
 </div>
 
 <script>
-/* The submission page only works locally, so the link is hidden on the
-   deployed site. Delete this block and the `hidden` attribute on the link
-   in the masthead to show it everywhere. */
 (function(){
   const local = ["localhost","127.0.0.1","[::1]",""].includes(location.hostname);
   const el = document.getElementById("adminlink");
@@ -157,13 +198,11 @@ footer{
 
 <script>
 const $ = id => document.getElementById(id);
-const slug = s => (s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-const slugOf = s => `${(s.year||"").slice(0,4)}-${slug(s.game)}`;
-
+const yearKey = s => (s.year || "").slice(0,4);
 const initialsColors = ["#3A4245","#5B6A6E","#46504F","#6A7472"];
+
 function avatar(student, i){
   const li = document.createElement("li");
-  const fig = document.createElement("figure");
   const initials = (student.name||"?").split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
   const fb = () => {
     const d = document.createElement("div");
@@ -174,58 +213,80 @@ function avatar(student, i){
   };
   if (student.photo){
     const img = new Image();
-    img.src = student.photo; img.alt = student.name;
+    img.src = student.photo; img.alt = student.name; img.loading = "lazy";
     img.onerror = () => img.replaceWith(fb());
-    fig.append(img);
-  } else fig.append(fb());
-  const cap = document.createElement("figcaption");
+    li.append(img);
+  } else li.append(fb());
+  const cap = document.createElement("span");
+  cap.className = "cap";
   cap.textContent = student.name;
-  fig.append(cap);
-  li.append(fig);
+  li.append(cap);
+  li.tabIndex = 0;
   return li;
 }
 
-function card(s){
+function card(s, history){
   const art = document.createElement("article");
   art.className = "card";
-  const href = `robot-archive.html?robot=${slugOf(s)}`;
+  const href = `robot-archive.html?team=${encodeURIComponent(s.team)}&year=${yearKey(s)}`;
 
-  const season = document.createElement("p");
-  season.className = "season";
-  season.textContent = `${s.program || ""} · ${s.year || ""}`.replace(/^ · | · $/,"");
+  /* every year this team appears, so a card can point at the rest */
+  const others = history.filter(y => y !== s.year);
 
-  const team = document.createElement("h2");
+  /* everything searchable, lowercased once at build time */
+  art.dataset.search = [
+    s.team, s.teamName, s.game, s.year, s.program, s.award,
+    ...(s.students || []).map(x => x.name)
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  const team = document.createElement("h3");
   team.className = "team";
   const a = document.createElement("a");
   a.href = href;
-  a.textContent = s.team || s.game || "Team";
+  a.textContent = s.team || "—";
   team.append(a);
+  if (history.length > 1){
+    const b = document.createElement("span");
+    b.className = "badge";
+    b.textContent = `${history.length} seasons`;
+    team.append(b);
+  }
+  art.append(team);
 
-  const game = document.createElement("p");
-  game.className = "game";
-  game.textContent = s.game || "";
-
-  const award = document.createElement("p");
-  award.className = "award";
-  award.textContent = s.award || "";
-  if (s.record){
-    const rec = document.createElement("span");
-    rec.className = "record";
-    rec.textContent = (s.award ? "  ·  " : "") + s.record;
-    award.append(rec);
+  if (s.teamName){
+    const tn = document.createElement("p");
+    tn.className = "tname";
+    tn.textContent = s.teamName;
+    art.append(tn);
   }
 
-  const crew = document.createElement("ul");
-  crew.className = "crew";
-  crew.append(...(s.students || []).map(avatar));
+  if (others.length){
+    const al = document.createElement("p");
+    al.className = "also";
+    al.textContent = `Also built in ${others.join(" · ")}`;
+    art.append(al);
+  }
 
-  const view = document.createElement("p");
-  view.className = "view";
-  view.textContent = "View robot →";
+  if (s.award || s.record){
+    const aw = document.createElement("p");
+    aw.className = "award";
+    aw.textContent = s.award || "";
+    if (s.record){
+      const r = document.createElement("span");
+      r.className = "record";
+      r.textContent = (s.award ? "  ·  " : "") + s.record;
+      aw.append(r);
+    }
+    art.append(aw);
+  }
 
-  art.append(season, team, game, award, crew, view);
+  if ((s.students || []).length){
+    const crew = document.createElement("ul");
+    crew.className = "crew";
+    crew.append(...s.students.map(avatar));
+    art.append(crew);
+  }
 
-  /* the whole card is clickable, but the team name stays the real link */
   art.addEventListener("click", e => {
     if (e.target.closest("a")) return;
     location.href = href;
@@ -248,18 +309,78 @@ function card(s){
       : `Could not load robots.json — ${err.message}`;
     return;
   }
-
   $("status").hidden = true;
 
-  /* newest first on the roster — the viewer keeps chronological order */
-  const ordered = [...data].reverse();
-  $("roster").append(...ordered.map(card));
+  /* only teams with a scanned model appear on the roster */
+  const shown  = data.filter(s => s.model);
+  const hidden = data.length - shown.length;
 
+  /* every year each team appears, oldest first */
+  const history = new Map();
+  shown.forEach(s => {
+    const k = (s.team || "").toLowerCase();
+    if (!history.has(k)) history.set(k, []);
+    history.get(k).push(s.year);
+  });
+  history.forEach(v => v.sort());
+
+  /* group by season, newest first */
+  const groups = new Map();
+  shown.forEach(s => {
+    const k = `${yearKey(s)}|${s.game || ""}`;
+    if (!groups.has(k)) groups.set(k, { year:s.year, game:s.game, rows:[] });
+    groups.get(k).rows.push(s);
+  });
+  const ordered = [...groups.entries()]
+    .sort((a,b) => b[0].localeCompare(a[0]))
+    .map(([,g]) => g);
+
+  const frag = document.createDocumentFragment();
+  ordered.forEach(g => {
+    const sec = document.createElement("section");
+    sec.className = "season";
+    const h = document.createElement("h2");
+    h.innerHTML = `<span class="game">${g.game || "Unlabelled season"}</span>
+                   <span class="yr">${g.year || ""}</span>
+                   <span class="n">${g.rows.length} team${g.rows.length===1?"":"s"}</span>`;
+    const grid = document.createElement("div");
+    grid.className = "teams";
+    g.rows.sort((a,b) => (a.team||"").localeCompare(b.team||"", undefined, {numeric:true}));
+    grid.append(...g.rows.map(s => card(s, history.get((s.team||"").toLowerCase()) || [s.year])));
+    sec.append(h, grid);
+    frag.append(sec);
+  });
+  $("sections").append(frag);
+
+  const teams = new Set(shown.map(s => s.team));
   const names = new Set();
-  data.forEach(s => (s.students || []).forEach(st => names.add(st.name)));
-  $("count").textContent = `${data.length} robots · ${names.size} students`;
-  $("foot").textContent =
-    `${data[0].year} – ${data[data.length-1].year}`;
+  shown.forEach(s => (s.students || []).forEach(x => names.add(x.name)));
+  $("count").textContent = `${teams.size} teams · ${shown.length} robots`;
+  $("foot").textContent = hidden
+    ? `${hidden} entr${hidden===1?"y":"ies"} have no 3D model yet — they appear here once one is added.`
+    : "";
+
+  /* ---------------- search ---------------- */
+  const q = $("q");
+  function filter(){
+    const term = q.value.trim().toLowerCase();
+    let visible = 0;
+    document.querySelectorAll(".season").forEach(sec => {
+      let n = 0;
+      sec.querySelectorAll(".card").forEach(c => {
+        const hit = !term || c.dataset.search.includes(term);
+        c.hidden = !hit;
+        if (hit) n++;
+      });
+      sec.hidden = n === 0;
+      sec.querySelector(".n").textContent = `${n} team${n===1?"":"s"}`;
+      visible += n;
+    });
+    $("empty").hidden = visible > 0;
+    $("hits").textContent = term ? `${visible} match${visible===1?"":"es"}` : "";
+  }
+  q.addEventListener("input", filter);
+  q.addEventListener("keydown", e => { if (e.key === "Escape"){ q.value=""; filter(); } });
 })();
 </script>
 </body>

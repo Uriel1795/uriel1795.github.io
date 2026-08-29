@@ -210,6 +210,65 @@ body{
   text-transform:uppercase;color:var(--ink-60);margin:0 0 6px;
 }
 .specs dd{margin:0;font-size:15px;font-variation-settings:"wdth" 96,"wght" 600}
+.extra{margin-top:38px;padding-top:22px;border-top:1.5px solid var(--ink)}
+.extra[hidden]{display:none}
+
+.notebook{
+  display:flex;align-items:center;gap:18px;padding:18px 20px;
+  border:1px solid var(--rule);background:#fff;text-decoration:none;color:var(--ink);
+  transition:border-color .15s ease,background .15s ease;
+}
+.notebook:hover{border-color:var(--ink);background:#FAFBF9}
+.nb-ico{width:30px;height:40px;flex:0 0 auto;color:var(--ink-60)}
+.notebook:hover .nb-ico{color:var(--red)}
+.nb-text{display:flex;flex-direction:column;gap:5px;min-width:0}
+.nb-title{font-variation-settings:"wdth" 100,"wght" 700;font-size:16px}
+.nb-meta{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60)}
+.nb-go{
+  margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;
+}
+
+.mementos{
+  list-style:none;margin:0;padding:0;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;
+}
+.mementos li{margin:0}
+.mementos button{
+  display:block;width:100%;padding:0;border:1px solid var(--rule);background:#fff;
+  cursor:zoom-in;text-align:left;
+}
+.mementos button:hover{border-color:var(--ink)}
+.mementos img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.mementos figcaption{
+  padding:9px 11px;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  line-height:1.45;color:var(--ink-60);
+}
+
+.lightbox{
+  position:fixed;inset:0;z-index:50;background:rgba(12,16,18,.94);
+  display:flex;align-items:center;justify-content:center;gap:10px;padding:24px;
+}
+.lightbox[hidden]{display:none}
+.lb-fig{margin:0;max-width:min(1100px,92vw);max-height:88vh;display:flex;
+  flex-direction:column;gap:12px;align-items:center}
+.lb-fig img{max-width:100%;max-height:78vh;object-fit:contain;background:#0C1012}
+.lb-fig figcaption{
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:#C9CFCD;text-align:center;
+}
+.lb-close,.lb-nav{
+  background:none;border:0;color:#C9CFCD;cursor:pointer;font-size:34px;line-height:1;
+  padding:10px 14px;flex:0 0 auto;
+}
+.lb-close{position:absolute;top:10px;right:14px;font-size:38px}
+.lb-close:hover,.lb-nav:hover{color:#fff}
+.lb-nav[hidden]{visibility:hidden;display:block}
+@media (max-width:620px){
+  .notebook{flex-wrap:wrap;gap:12px}
+  .nb-go{margin-left:0;width:100%}
+  .lb-nav{font-size:26px;padding:8px}
+}
+
 .note{margin-top:26px;max-width:62ch;font-size:14px;line-height:1.65;color:var(--ink-60)}
 
 /* ---------- mobile: robot and crew become separate sections ---------- */
@@ -271,6 +330,37 @@ body{
 
   <dl class="specs" id="specs"></dl>
   <p class="note" id="note"></p>
+
+  <section class="extra" id="notebook-sec" hidden aria-labelledby="nb-h">
+    <h2 class="eyebrow" id="nb-h">Judges notebook</h2>
+    <a class="notebook" id="notebook" target="_blank" rel="noopener">
+      <svg class="nb-ico" viewBox="0 0 24 32" aria-hidden="true">
+        <path d="M3 1h13l5 5v25H3z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M16 1v5h5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M7 12h10M7 16h10M7 20h6" stroke="currentColor" stroke-width="1.4"/>
+      </svg>
+      <span class="nb-text">
+        <span class="nb-title">Engineering notebook</span>
+        <span class="nb-meta" id="nb-meta"></span>
+      </span>
+      <span class="nb-go">Open PDF &rarr;</span>
+    </a>
+  </section>
+
+  <section class="extra" id="mementos-sec" hidden aria-labelledby="mm-h">
+    <h2 class="eyebrow" id="mm-h">Mementos</h2>
+    <ul class="mementos" id="mementos"></ul>
+  </section>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" id="lb-close" aria-label="Close">&times;</button>
+  <button class="lb-nav lb-prev" id="lb-prev" aria-label="Previous">&#8249;</button>
+  <figure class="lb-fig">
+    <img id="lb-img" alt="">
+    <figcaption id="lb-cap"></figcaption>
+  </figure>
+  <button class="lb-nav lb-next" id="lb-next" aria-label="Next">&#8250;</button>
 </div>
 
 <script>
@@ -513,25 +603,115 @@ function placeCrew(){
 mobile.addEventListener("change", placeCrew);
 placeCrew();
 
-/* ---------------- page rendering ---------------- */
-const slug = s => (s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-const slugOf = s => `${(s.year||"").slice(0,4)}-${slug(s.game)}`;
+/* ---------------- scope to one team ---------------- */
+/* The viewer only ever shows one team's robots. Without ?team= there is
+   nothing to show, so send the visitor back to the roster. */
+const params = new URLSearchParams(location.search);
+const teamId = (params.get("team") || "").trim();
+if (!teamId){ location.replace("index.html"); throw new Error("no team"); }
 
+const yearKey = s => (s.year || "").slice(0,4);
+const ENTRIES = SEASONS
+  .filter(s => (s.team || "").toLowerCase() === teamId.toLowerCase())
+  .sort((a,b) => yearKey(a).localeCompare(yearKey(b)));
+
+if (!ENTRIES.length){
+  statusEl.className = "status error";
+  statusEl.textContent = `No robots on file for team ${teamId}.`;
+  el("count").textContent = "";
+  throw new Error("unknown team");
+}
+
+/* ---------------- notebook + mementos ---------------- */
+function renderNotebook(s){
+  const sec = el("notebook-sec");
+  const nb = s.notebook;
+  const url = typeof nb === "string" ? nb : nb && nb.file;
+  if (!url){ sec.hidden = true; return; }
+  sec.hidden = false;
+  el("notebook").href = url;
+  const bits = [];
+  if (nb.pages) bits.push(`${nb.pages} pages`);
+  if (nb.note)  bits.push(nb.note);
+  el("nb-meta").textContent = bits.join("  \u00b7  ") || url.split("/").pop();
+}
+
+let LB = [], lbAt = 0;
+
+function renderMementos(s){
+  const sec = el("mementos-sec");
+  const items = (s.mementos || []).filter(m => m && (m.image || typeof m === "string"))
+    .map(m => typeof m === "string" ? { image:m } : m);
+  LB = items;
+  if (!items.length){ sec.hidden = true; return; }
+  sec.hidden = false;
+  el("mementos").replaceChildren(...items.map((m,i)=>{
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    const fig = document.createElement("figure");
+    fig.style.margin = "0";
+    const img = new Image();
+    img.src = m.image; img.alt = m.caption || ""; img.loading = "lazy";
+    fig.append(img);
+    if (m.caption){
+      const c = document.createElement("figcaption");
+      c.textContent = m.caption;
+      fig.append(c);
+    }
+    b.append(fig);
+    b.addEventListener("click", ()=>openLightbox(i));
+    li.append(b);
+    return li;
+  }));
+}
+
+function openLightbox(i){
+  lbAt = i;
+  const m = LB[i];
+  el("lb-img").src = m.image;
+  el("lb-img").alt = m.caption || "";
+  el("lb-cap").textContent = m.caption || "";
+  el("lb-prev").hidden = LB.length < 2;
+  el("lb-next").hidden = LB.length < 2;
+  el("lightbox").hidden = false;
+  el("lb-close").focus();
+}
+function stepLightbox(d){
+  if (!LB.length) return;
+  openLightbox((lbAt + d + LB.length) % LB.length);
+}
+el("lb-close").addEventListener("click", ()=>{ el("lightbox").hidden = true; });
+el("lb-prev").addEventListener("click", ()=>stepLightbox(-1));
+el("lb-next").addEventListener("click", ()=>stepLightbox(1));
+el("lightbox").addEventListener("click", e=>{
+  if (e.target === el("lightbox")) el("lightbox").hidden = true;
+});
+addEventListener("keydown", e=>{
+  if (el("lightbox").hidden) return;
+  if (e.key === "Escape") el("lightbox").hidden = true;
+  if (e.key === "ArrowLeft")  stepLightbox(-1);
+  if (e.key === "ArrowRight") stepLightbox(1);
+});
+
+/* ---------------- page rendering ---------------- */
 function render(i){
-  const s = SEASONS[i];
-  history.replaceState(null, "", `?robot=${slugOf(s)}`);
-  document.title = `${s.game} ${s.year} — Robot Archive`;
-  crewList.replaceChildren(...s.students.map(avatar));
+  const s = ENTRIES[i];
+  history.replaceState(null, "", `?team=${encodeURIComponent(s.team)}&year=${yearKey(s)}`);
+  document.title = `Team ${s.team} · ${s.game} ${s.year} — Robot Archive`;
+  crewList.replaceChildren(...(s.students || []).map(avatar));
   el("program").textContent = s.program;
   el("game").textContent = s.game;
   el("year").textContent = s.year;
-  el("team").innerHTML = `<b>Team ${s.team}</b> · ${s.record}<br><span class="award">${s.award}</span>`;
-  el("specs").replaceChildren(...Object.entries(s.specs).map(([k,v])=>{
+  el("team").innerHTML = `<b>Team ${s.team}</b> · ${s.record || ""}<br><span class="award">${s.award || ""}</span>`;
+  el("specs").replaceChildren(...Object.entries(s.specs || {}).map(([k,v])=>{
     const d = document.createElement("div");
     d.innerHTML = `<dt>${k}</dt><dd>${v}</dd>`;
     return d;
   }));
-  el("note").textContent = s.note;
+  el("note").textContent = s.note || "";
+  renderNotebook(s);
+  renderMementos(s);
   document.querySelectorAll(".bay").forEach((b,j)=>b.setAttribute("aria-current", j===i));
   show(s, i);
 }
@@ -541,21 +721,27 @@ const BOLT = `<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true">
   <path d="M12 5.6 17.8 8.9v6.2L12 18.4 6.2 15.1V8.9z" fill="#7C8482"/></svg>`;
 
 const channel = el("channel");
-SEASONS.forEach((s,i)=>{
-  const b = document.createElement("button");
-  b.className = "bay"; b.type = "button"; b.setAttribute("role","tab");
-  b.innerHTML = `<div class="hole">${BOLT}</div><span class="lab">${s.year}</span><span class="gm">${s.game}</span>`;
-  b.addEventListener("click", ()=>render(i));
-  channel.append(b);
-});
-channel.addEventListener("keydown", e=>{
-  const bays = [...channel.querySelectorAll(".bay")];
-  const at = bays.findIndex(b=>b.getAttribute("aria-current")==="true");
-  if (e.key === "ArrowRight" && at < bays.length-1){ bays[at+1].click(); bays[at+1].focus(); }
-  if (e.key === "ArrowLeft"  && at > 0){ bays[at-1].click(); bays[at-1].focus(); }
-});
-el("count").textContent =
-  `${SEASONS.length} robots · ${SEASONS[0].year.slice(0,4)}–${SEASONS.at(-1).year.slice(-2)}`;
+const rail = document.querySelector(".rail");
+if (ENTRIES.length < 2){
+  rail.hidden = true;                       // one robot — nothing to switch between
+} else {
+  ENTRIES.forEach((s,i)=>{
+    const b = document.createElement("button");
+    b.className = "bay"; b.type = "button"; b.setAttribute("role","tab");
+    b.innerHTML = `<div class="hole">${BOLT}</div><span class="lab">${s.year}</span><span class="gm">${s.game}</span>`;
+    b.addEventListener("click", ()=>render(i));
+    channel.append(b);
+  });
+  channel.addEventListener("keydown", e=>{
+    const bays = [...channel.querySelectorAll(".bay")];
+    const at = bays.findIndex(b=>b.getAttribute("aria-current")==="true");
+    if (e.key === "ArrowRight" && at < bays.length-1){ bays[at+1].click(); bays[at+1].focus(); }
+    if (e.key === "ArrowLeft"  && at > 0){ bays[at-1].click(); bays[at-1].focus(); }
+  });
+}
+el("count").textContent = ENTRIES.length > 1
+  ? `Team ${teamId} · ${ENTRIES.length} robots`
+  : `Team ${teamId}`;
 
 function resize(){
   const w = stage.clientWidth, h = stage.clientHeight;
@@ -572,10 +758,10 @@ resize();
   renderer.render(scene, camera);
 })();
 
-/* Open the robot named in ?robot=… if there is one, else the newest. */
-const wanted = new URLSearchParams(location.search).get("robot");
-const start = wanted ? SEASONS.findIndex(s => slugOf(s) === wanted) : -1;
-render(start >= 0 ? start : SEASONS.length - 1);
+/* Open ?year= if given, else this team's most recent robot. */
+const wantYear = params.get("year");
+const start = wantYear ? ENTRIES.findIndex(s => yearKey(s) === wantYear) : -1;
+render(start >= 0 ? start : ENTRIES.length - 1);
 </script>
 
 <script>
