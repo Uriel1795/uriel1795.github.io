@@ -5,20 +5,7 @@
     "year": "2021–22",
     "team": "12345A",
     "model": "models/12345a-2021.glb",
-    "students": [
-      {
-        "name": "Ana R.",
-        "photo": "photos/ana.jpg"
-      },
-      {
-        "name": "Marco D.",
-        "photo": "photos/marco.jpg"
-      },
-      {
-        "name": "Priya S.",
-        "photo": "photos/priya.jpg"
-      }
-    ],
+    "students": [],
     "award": "Design Award — State",
     "record": "18–6",
     "specs": {
@@ -87,7 +74,8 @@
       "Built": "Sep–Mar"
     },
     "note": "The conveyor jammed at every early tournament. Swapping to wider spacers on the roller shafts fixed it in week six.",
-    "teamName": "Bolt Cutters"
+    "teamName": "Bolt Cutters",
+    "logo": "logos/12345b.png"
   },
   {
     "program": "VEX IQ",
@@ -127,9 +115,18 @@
     "mementos": [
       {
         "image": "mementos/12345b-2024-1.jpg",
-        "caption": "State qualifier, February 2024"
+        "caption": "State qualifier, February 2025"
+      },
+      {
+        "image": "mementos/12345b-2024-2.jpg",
+        "caption": "First drivetrain, October — scrapped after two weeks"
+      },
+      {
+        "image": "mementos/12345b-2024-3.jpg",
+        "caption": "Pit setup at Worlds"
       }
-    ]
+    ],
+    "logo": "logos/12345b.png"
   },
   {
     "program": "VEX IQ",
@@ -137,17 +134,7 @@
     "year": "2025–26",
     "team": "12345C",
     "model": "models/12345c-2025.glb",
-    "students": [
-      {
-        "name": "Iris L."
-      },
-      {
-        "name": "Owen F."
-      },
-      {
-        "name": "Zara N."
-      }
-    ],
+    "students": [],
     "award": "Build Award — Regional",
     "record": "15–5",
     "specs": {
@@ -158,5 +145,17 @@
     },
     "note": "Current build. The lift is on its third revision; the team is testing a lighter carriage this month.",
     "teamName": "Chain Reaction"
+  },
+  {
+    "program": "VEX V5",
+    "game": "Override",
+    "year": "2026–27",
+    "team": "5675D",
+    "model": "models/5675d-2026.glb",
+    "award": "",
+    "record": "",
+    "specs": {},
+    "note": "",
+    "teamName": "Sweet Potatoes"
   }
 ]

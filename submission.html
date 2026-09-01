@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Robot Archive — Admin</title>
+<title>Robot Archive — Submission</title>
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -29,6 +29,9 @@ body{
 }
 .mark{font-variation-settings:"wdth" 118,"wght" 800;font-size:24px;text-transform:uppercase}
 .mark em{font-style:normal;color:var(--red)}
+.mark a{color:inherit;text-decoration:none}
+.mark a:hover{color:var(--red)}
+.mark a:hover em{color:var(--ink)}
 .mark span{
   font-variation-settings:"wdth" 100,"wght" 500;font-size:12px;letter-spacing:.16em;
   color:var(--ink-60);margin-left:10px;
@@ -89,6 +92,7 @@ legend{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em
 label{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;
   letter-spacing:.08em;text-transform:uppercase;color:var(--ink-60);margin:0 0 5px}
 input[type=text],textarea,select{
+  appearance:none;background-image:none;
   width:100%;font:inherit;font-size:14px;padding:8px 10px;background:var(--field);
   border:1px solid var(--rule);color:var(--ink);border-radius:0;
 }
@@ -111,6 +115,12 @@ textarea{min-height:78px;resize:vertical;line-height:1.55}
 .filebox .name{font-family:"IBM Plex Mono",monospace;font-size:12.5px;word-break:break-all}
 .filebox .name.none{color:var(--ink-60)}
 
+.notice{
+  margin:0 0 16px;padding:12px 14px;background:#fff;
+  border-left:3px solid var(--red);
+  font-size:13.5px;line-height:1.6;color:var(--ink);
+}
+.notice b{font-variation-settings:"wdth" 100,"wght" 700}
 .menuwrap{position:relative;display:inline-block}
 .specmenu{
   position:absolute;top:calc(100% + 6px);left:0;z-index:20;min-width:210px;
@@ -145,7 +155,7 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
 <div class="wrap">
 
   <header class="masthead">
-    <div class="mark">Robot <em>Archive</em> <span>Admin</span></div>
+    <div class="mark"><a href="index.html">← Robot <em>Archive</em></a> <span>Submission</span></div>
     <div class="mono" id="counter" style="font-size:12px;color:var(--ink-60)"></div>
   </header>
 
@@ -180,12 +190,22 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
           <div class="grid2">
             <div class="field">
               <label for="f-team">Team number *</label>
-              <input type="text" id="f-team" placeholder="34Q or 4610A" autofocus>
-              <p class="hint" id="teamhint"></p>
+              <input type="text" id="f-team" placeholder="34Q, 4610A, 271B…" autofocus>
             </div>
             <div class="field">
               <label for="f-teamname">Team name</label>
               <input type="text" id="f-teamname" placeholder="Gear Grinders">
+            </div>
+          </div>
+          <div class="filebox" style="margin-top:14px">
+            <div>
+              <div class="name" id="logoname">No logo set</div>
+              <p class="hint" id="logohint">Shown at the top of the team's page. PNG or SVG
+                with a transparent background works best. Copied into logos/.</p>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="ghost tiny" id="picklogo">Choose logo…</button>
+              <button type="button" class="ghost tiny" id="clearlogo">Clear</button>
             </div>
           </div>
         </fieldset>
@@ -198,12 +218,16 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
               <input type="text" id="f-year" placeholder="2024 or 2024-25">
             </div>
             <div class="field">
-              <label for="f-program">Program (auto)</label>
-              <input type="text" id="f-program" placeholder="from team number">
+              <label for="f-program">Program *</label>
+              <select id="f-program">
+                <option value="">— pick one —</option>
+                <option>VEX IQ</option>
+                <option>VEX V5</option>
+              </select>
             </div>
             <div class="field">
-              <label for="f-game">Game (auto)</label>
-              <input type="text" id="f-game" placeholder="from year" list="games">
+              <label for="f-game">Game</label>
+              <input type="text" id="f-game" placeholder="fills from program + year" list="games">
               <datalist id="games"></datalist>
             </div>
           </div>
@@ -264,19 +288,18 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
 
         <fieldset>
           <legend>Mementos</legend>
+          <p class="notice">
+            <b>No identifiable people.</b> Photos of the robot, the build, the field
+            or the pit — not the team. Hands, arms and unrecognisable figures in the
+            background are fine; faces are not. Photos are re-encoded on upload, which
+            strips location data.
+          </p>
           <div id="mementos"></div>
           <button type="button" class="ghost tiny" id="addmemento">+ Add memento</button>
           <p class="hint">Group photos, earlier versions of the robot, pit shots — anything
             the team is happy to have shown. Each one can carry a caption.</p>
         </fieldset>
 
-        <fieldset>
-          <legend>Students</legend>
-          <div id="students"></div>
-          <button type="button" class="ghost tiny" id="addstudent">+ Add student</button>
-          <p class="hint">Photos are optional — without one the site shows an initials circle.
-            Consider first name and last initial rather than full names on a public site.</p>
-        </fieldset>
 
         <fieldset>
           <legend>Specs</legend>
@@ -320,7 +343,6 @@ let dir = null;            // project directory handle
 let data = [];             // the robots array
 let index = -1;            // selected robot
 let pendingModel = null;   // File waiting to be copied on save
-let pendingPhotos = {};    // rowId -> File
 
 const slug = s => (s || "").toLowerCase().trim()
   .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -382,8 +404,8 @@ function renderList(){
 
 $("add").addEventListener("click", ()=>{
   commit();
-  data.push({ program:"VEX IQ", game:"", year:"", team:"", model:"",
-              students:[], award:"", record:"",
+  data.push({ program:(data[index] && data[index].program) || "", game:"", year:"", team:"", model:"",
+              award:"", record:"",
               specs:{}, note:"" });
   index = data.length - 1;
   renderList(); fillForm(); renderJson();
@@ -399,28 +421,6 @@ function swap(d){
 }
 
 /* ---------------- repeating rows ---------------- */
-function studentRow(s = {name:"", photo:""}){
-  const id = "s" + Math.random().toString(36).slice(2,8);
-  const div = document.createElement("div");
-  div.className = "row student"; div.dataset.id = id;
-  div.innerHTML = `
-    <div><label>Name</label><input type="text" class="s-name" value="${s.name||""}" placeholder="Nia W."></div>
-    <div><label>Photo</label><div class="name none s-photo">${s.photo || "none"}</div></div>
-    <div style="display:flex;gap:6px">
-      <button type="button" class="ghost tiny s-pick">Photo…</button>
-      <button type="button" class="ghost tiny s-del">×</button>
-    </div>`;
-  div.querySelector(".s-pick").addEventListener("click", async ()=>{
-    const f = await pickFile([{description:"Image", accept:{"image/*":[".jpg",".jpeg",".png",".webp"]}}]);
-    if (!f) return;
-    pendingPhotos[id] = f;
-    const el = div.querySelector(".s-photo");
-    el.textContent = f.name + "  (copies on save)";
-    el.classList.remove("none");
-  });
-  div.querySelector(".s-del").addEventListener("click", ()=>{ delete pendingPhotos[id]; div.remove(); });
-  return div;
-}
 
 function mementoRow(m = {image:"", caption:""}){
   const id = "m" + Math.random().toString(36).slice(2,8);
@@ -456,7 +456,6 @@ function specRow(k="", v=""){
   div.querySelector(".k-del").addEventListener("click", ()=>div.remove());
   return div;
 }
-$("addstudent").addEventListener("click", ()=>$("students").append(studentRow()));
 /* Suggested spec labels. Shared list first, then the ones that only make
    sense for one program. Edit freely — the label field stays free text. */
 const SPEC_LABELS = {
@@ -567,40 +566,6 @@ $("clearmodel").addEventListener("click", ()=>{
   $("modelhint").textContent = "The site falls back to a stand-in robot when no model is set.";
 });
 
-/* Team-number format tells us the program:
-   two digits + letter  -> VEX IQ      (34Q)
-   four digits + letter -> VEX V5      (4610A)
-   Anything else is left alone for you to fill in by hand. */
-function programFor(team){
-  const t = (team || "").trim().toUpperCase();
-  if (/^\d{1,3}[A-Z]$/.test(t))  return "VEX IQ";
-  if (/^\d{4,5}[A-Z]$/.test(t)) return "VEX V5";
-  return null;
-}
-
-function syncProgram(){
-  const team = $("f-team").value;
-  const guess = programFor(team);
-  const hint = $("teamhint");
-  const prog = $("f-program");
-
-  if (!team.trim()){ hint.textContent = ""; return; }
-  if (!guess){
-    hint.textContent = "Unrecognised format — set the program yourself.";
-    hint.style.color = "var(--red)";
-    return;
-  }
-  hint.style.color = "";
-  if (!prog.value.trim() || programFor(prog.dataset.forTeam || "") === prog.value){
-    prog.value = guess;           // only overwrite what we filled in ourselves
-  }
-  prog.dataset.forTeam = team;
-  hint.textContent = prog.value === guess
-    ? `Detected ${guess}.`
-    : `Team format suggests ${guess}, but program is set to "${prog.value}".`;
-}
-
-
 /* ---- Season tables --------------------------------------------------
    Keyed on the starting year. Verified against the official V5RC and
    VIQRC competition histories. VIQRC entries before 2019-20 are from
@@ -643,13 +608,19 @@ function findGame(name){
 /* Offer that program's games as suggestions in the Game field. */
 function refreshGameList(){
   const prog = $("f-program").value.trim();
-  const dl = $("games");
-  const years = GAMES[prog];
-  dl.replaceChildren(...(years
-    ? Object.entries(years).sort((a,b)=>b[0].localeCompare(a[0]))
-        .map(([y,g])=>{ const o = document.createElement("option");
-                        o.value = g; o.label = prettyYear(y); return o; })
-    : []));
+  const rows = [];
+  for (const [p, years] of Object.entries(GAMES)){
+    if (prog && p !== prog) continue;
+    for (const [y, g] of Object.entries(years))
+      rows.push({ game:g, year:y, program:p });
+  }
+  rows.sort((a,b) => b.year.localeCompare(a.year));
+  $("games").replaceChildren(...rows.map(r=>{
+    const o = document.createElement("option");
+    o.value = r.game;
+    o.label = prog ? prettyYear(r.year) : `${r.program} \u00b7 ${prettyYear(r.year)}`;
+    return o;
+  }));
 }
 
 /* year (+ program) -> game */
@@ -703,6 +674,26 @@ function seasonNote(){
   }
 }
 
+function logoFilename(file){
+  const t = slug($("f-team").value) || "team";
+  const ext = (file.name.split(".").pop() || "png").toLowerCase();
+  return `${t}.${ext}`;                 // one logo per team, not per season
+}
+
+$("picklogo").addEventListener("click", async ()=>{
+  const file = await pickFile([{description:"Image",
+    accept:{"image/*":[".png",".svg",".jpg",".jpeg",".webp"]}}]);
+  if (!file) return;
+  pendingLogo = file;
+  $("logoname").textContent = `logos/${logoFilename(file)}`;
+  $("logohint").textContent = `${file.name} → copies on save`;
+});
+$("clearlogo").addEventListener("click", ()=>{
+  pendingLogo = null;
+  $("logoname").textContent = "No logo set";
+  $("logohint").textContent = "Shown at the top of the team's page. Copied into logos/.";
+});
+
 function notebookFilename(){
   const y = ($("f-year").value || "").slice(0,4) || "year";
   const t = slug($("f-team").value) || "team";
@@ -746,13 +737,17 @@ function fillForm(){
   $("f-award").value   = r.award || "";
   $("f-note").value    = r.note || "";
 
-  pendingModel = null; pendingPhotos = {};
+  pendingModel = null;
   $("modelname").textContent = r.model || "No model set";
   $("modelhint").textContent = r.model
     ? "Choose a new .glb to replace it."
     : "The site falls back to a stand-in robot when no model is set.";
 
-  pendingNotebook = null; pendingMementos = {};
+  pendingLogo = null; pendingNotebook = null; pendingMementos = {};
+  $("logoname").textContent = r.logo || "No logo set";
+  $("logohint").textContent = r.logo
+    ? "Choose a new image to replace it."
+    : "Shown at the top of the team's page. Copied into logos/.";
   const nb = typeof r.notebook === "string" ? {file:r.notebook} : (r.notebook || {});
   $("nbname").textContent = nb.file || "No notebook set";
   $("nbhint").textContent = nb.file
@@ -763,11 +758,8 @@ function fillForm(){
   $("mementos").replaceChildren(...(r.mementos || [])
     .map(m => typeof m === "string" ? {image:m} : m).map(mementoRow));
 
-  $("students").replaceChildren(...(r.students || []).map(studentRow));
   const specs = Object.entries(r.specs || {});
   $("specs").replaceChildren(...specs.map(([k,v])=>specRow(k,v)));
-  $("f-program").dataset.forTeam = r.team || "";
-  syncProgram();
   refreshGameList();
   refreshSpecLabels();
   seasonNote();
@@ -785,19 +777,9 @@ function commit(){
   r.award   = $("f-award").value.trim();
   r.note    = $("f-note").value.trim();
 
-  r.students = [...$("students").children].map(div=>{
-    const name = div.querySelector(".s-name").value.trim();
-    const id = div.dataset.id;
-    const s = { name };
-    if (pendingPhotos[id]){
-      const ext = pendingPhotos[id].name.split(".").pop().toLowerCase();
-      s.photo = `photos/${slug(name) || id}.${ext}`;
-    } else {
-      const shown = div.querySelector(".s-photo").textContent;
-      if (shown && shown !== "none" && shown.startsWith("photos/")) s.photo = shown;
-    }
-    return s;
-  }).filter(s=>s.name);
+  /* Students are not editable here — names are admin-only and this form is
+     heading toward being public. Existing r.students is left untouched so
+     saving never wipes names already in robots.json. */
 
   r.specs = {};
   [...$("specs").children].forEach(div=>{
@@ -807,6 +789,7 @@ function commit(){
   });
 
   if (pendingModel) r.model = `models/${modelFilename()}`;
+  if (pendingLogo)  r.logo  = `logos/${logoFilename(pendingLogo)}`;
 
   const nbFile = pendingNotebook ? `notebooks/${notebookFilename()}`
     : (typeof r.notebook === "string" ? r.notebook : (r.notebook && r.notebook.file));
@@ -846,8 +829,8 @@ $("save").addEventListener("click", async ()=>{
   if (!dir) return toast("Open the project folder first", "err");
 
   const r = data[index];
-  if (!r.team || !r.game || !r.year)
-      return toast("Team number, Game and Year are all required", "err");
+  if (!r.team || !r.year || !r.program)
+      return toast("Team number, Program and Year are required", "err");
 
   const clash = data.some((o,i) => i !== index &&
       (o.team||"").toLowerCase() === r.team.toLowerCase() &&
@@ -858,6 +841,10 @@ $("save").addEventListener("click", async ()=>{
     if (pendingModel){
       await writeInto("models", modelFilename(), pendingModel);
       pendingModel = null;
+    }
+    if (pendingLogo){
+      await writeInto("logos", logoFilename(pendingLogo), pendingLogo);
+      pendingLogo = null;
     }
     if (pendingNotebook){
       await writeInto("notebooks", notebookFilename(), pendingNotebook);
@@ -871,13 +858,6 @@ $("save").addEventListener("click", async ()=>{
       }
       pendingMementos = {};
     }
-    for (const [id, file] of Object.entries(pendingPhotos)){
-      const row = $("students").querySelector(`[data-id="${id}"]`);
-      const name = row ? row.querySelector(".s-name").value.trim() : id;
-      const ext = file.name.split(".").pop().toLowerCase();
-      await writeInto("photos", `${slug(name) || id}.${ext}`, file);
-    }
-    pendingPhotos = {};
 
     const fh = await dir.getFileHandle("robots.json", { create:true });
     const w = await fh.createWritable();
@@ -914,7 +894,10 @@ $("del").addEventListener("click", ()=>{
 
 function renderJson(){ $("json").textContent = JSON.stringify(data, null, 2); }
 
-$("f-team").addEventListener("input", ()=>{ syncProgram(); refreshGameList(); refreshSpecLabels(); fillGameFromYear(); });
+$("f-program").addEventListener("change", ()=>{
+  $("f-program").dataset.auto = "";      // an explicit pick is never overwritten
+  refreshGameList(); refreshSpecLabels(); fillGameFromYear(); seasonNote();
+});
 $("f-year").addEventListener("input", fillGameFromYear);
 $("f-game").addEventListener("input", fillYearFromGame);
 $("f-year").addEventListener("blur", ()=>{

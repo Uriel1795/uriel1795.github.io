@@ -39,13 +39,13 @@ body{
   font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-60);
   letter-spacing:.06em;text-transform:uppercase;
 }
-.adminlink{
+.submitlink{
   font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;
   text-transform:uppercase;text-decoration:none;color:var(--ink);
   border:1.5px solid var(--ink);padding:6px 12px;white-space:nowrap;
 }
-.adminlink:hover{background:var(--ink);color:var(--paper)}
-.adminlink[hidden]{display:none}
+.submitlink:hover{background:var(--ink);color:var(--paper)}
+.submitlink[hidden]{display:none}
 
 .lede{margin:22px 0 0;font-size:17px;line-height:1.65;color:var(--ink-60)}
 @media (max-width:620px){
@@ -129,26 +129,8 @@ body{
 }
 .card .award .record{color:var(--ink-60)}
 
-.crew{
-  list-style:none;margin:14px 0 0;padding:12px 0 0;border-top:1px solid var(--rule);
-  display:flex;flex-wrap:wrap;gap:6px;
-}
-.crew li{position:relative}
-.crew img,.crew .fallback{
-  display:block;width:38px;height:38px;border-radius:50%;object-fit:cover;
-  border:2px solid var(--paper);background:var(--tile);
-}
-.crew .fallback{
-  display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;
-  font-size:12px;font-weight:600;color:var(--paper);
-}
-.crew .cap{
-  position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);
-  white-space:nowrap;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
-  background:var(--ink);color:var(--paper);padding:3px 6px;opacity:0;
-  pointer-events:none;transition:opacity .15s ease;z-index:4;
-}
-.crew li:hover .cap,.crew li:focus-within .cap{opacity:1}
+.crest{margin:0 0 14px;display:flex;align-items:flex-start}
+.crest img{display:block;max-width:84px;max-height:56px;object-fit:contain}
 
 .empty{
   margin:60px 0;font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-60);
@@ -168,7 +150,7 @@ footer{
     <div class="mark">Robot <em>Archive</em></div>
     <div class="mast-right">
       <div class="count" id="count"></div>
-      <a class="adminlink" id="adminlink" href="submission.html" hidden>+ Add robot</a>
+      <a class="submitlink" id="submitlink" href="submission.html" hidden>+ Add robot</a>
     </div>
   </header>
 
@@ -191,7 +173,7 @@ footer{
 <script>
 (function(){
   const local = ["localhost","127.0.0.1","[::1]",""].includes(location.hostname);
-  const el = document.getElementById("adminlink");
+  const el = document.getElementById("submitlink");
   if (local && el) el.hidden = false;
 })();
 </script>
@@ -199,31 +181,7 @@ footer{
 <script>
 const $ = id => document.getElementById(id);
 const yearKey = s => (s.year || "").slice(0,4);
-const initialsColors = ["#3A4245","#5B6A6E","#46504F","#6A7472"];
-
-function avatar(student, i){
-  const li = document.createElement("li");
-  const initials = (student.name||"?").split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
-  const fb = () => {
-    const d = document.createElement("div");
-    d.className = "fallback";
-    d.style.background = initialsColors[i % initialsColors.length];
-    d.textContent = initials;
-    return d;
-  };
-  if (student.photo){
-    const img = new Image();
-    img.src = student.photo; img.alt = student.name; img.loading = "lazy";
-    img.onerror = () => img.replaceWith(fb());
-    li.append(img);
-  } else li.append(fb());
-  const cap = document.createElement("span");
-  cap.className = "cap";
-  cap.textContent = student.name;
-  li.append(cap);
-  li.tabIndex = 0;
-  return li;
-}
+let LOGOS = new Map();
 
 function card(s, history){
   const art = document.createElement("article");
@@ -233,11 +191,23 @@ function card(s, history){
   /* every year this team appears, so a card can point at the rest */
   const others = history.filter(y => y !== s.year);
 
-  /* everything searchable, lowercased once at build time */
+  /* Searchable text. Student names are deliberately NOT indexed - the roster
+     doesn't show them, and indexing would let anyone map a name to a team.
+     Add ...(s.students||[]).map(x=>x.name) back here if you ever want it. */
   art.dataset.search = [
-    s.team, s.teamName, s.game, s.year, s.program, s.award,
-    ...(s.students || []).map(x => x.name)
+    s.team, s.teamName, s.game, s.year, s.program, s.award
   ].filter(Boolean).join(" ").toLowerCase();
+
+  const logo = s.logo || LOGOS.get((s.team || "").toLowerCase());
+  if (logo){
+    const crest = document.createElement("div");
+    crest.className = "crest";
+    const img = new Image();
+    img.src = logo; img.alt = `${s.teamName || s.team} logo`; img.loading = "lazy";
+    img.onerror = () => crest.remove();      // no logo, no placeholder
+    crest.append(img);
+    art.append(crest);
+  }
 
   const team = document.createElement("h3");
   team.className = "team";
@@ -280,13 +250,6 @@ function card(s, history){
     art.append(aw);
   }
 
-  if ((s.students || []).length){
-    const crew = document.createElement("ul");
-    crew.className = "crew";
-    crew.append(...s.students.map(avatar));
-    art.append(crew);
-  }
-
   art.addEventListener("click", e => {
     if (e.target.closest("a")) return;
     location.href = href;
@@ -314,6 +277,12 @@ function card(s, history){
   /* only teams with a scanned model appear on the roster */
   const shown  = data.filter(s => s.model);
   const hidden = data.length - shown.length;
+
+  /* a team's logo may only have been submitted in one season */
+  shown.forEach(s => {
+    const k = (s.team || "").toLowerCase();
+    if (s.logo && !LOGOS.has(k)) LOGOS.set(k, s.logo);
+  });
 
   /* every year each team appears, oldest first */
   const history = new Map();
@@ -353,8 +322,6 @@ function card(s, history){
   $("sections").append(frag);
 
   const teams = new Set(shown.map(s => s.team));
-  const names = new Set();
-  shown.forEach(s => (s.students || []).forEach(x => names.add(x.name)));
   $("count").textContent = `${teams.size} teams · ${shown.length} robots`;
   $("foot").textContent = hidden
     ? `${hidden} entr${hidden===1?"y":"ies"} have no 3D model yet — they appear here once one is added.`
