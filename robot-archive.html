@@ -543,12 +543,30 @@ let current = null, token = 0;
 function place(obj){
   const box = new THREE.Box3().setFromObject(obj);
   const size = box.getSize(new THREE.Vector3());
-  const s = 2.2 / Math.max(size.x, size.y, size.z);
-  if (isFinite(s) && s > 0 && (s < .5 || s > 2)) obj.scale.setScalar(s);
+  const k = 2.2 / Math.max(size.x, size.y, size.z);
+  if (isFinite(k) && k > 0) obj.scale.setScalar(k);
   const b2 = new THREE.Box3().setFromObject(obj);
   const c = b2.getCenter(new THREE.Vector3());
   obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= b2.min.y;
   obj.traverse(n => { if (n.isMesh) n.castShadow = n.receiveShadow = true; });
+}
+
+/* Fit the camera to the model rather than sitting at a fixed distance.
+   A long flat drivebase and a tall tower need very different framing. */
+function frame(obj){
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3());
+  const centre = box.getCenter(new THREE.Vector3());
+  const radius = 0.5 * size.length();
+  const fov = THREE.MathUtils.degToRad(camera.fov);
+  const dist = (radius / Math.sin(fov / 2)) * 0.82;   // 0.82 = a little margin
+
+  const dir = new THREE.Vector3(0.60, 0.40, 0.69).normalize();
+  camera.position.copy(centre).add(dir.multiplyScalar(dist));
+  controls.target.copy(centre);
+  controls.minDistance = radius * 0.7;
+  controls.maxDistance = radius * 7;
+  controls.update();
 }
 
 function show(entry, index){
@@ -564,6 +582,7 @@ function show(entry, index){
     place(obj);
     obj.rotation.y = -0.5;
     scene.add(obj);
+    frame(obj);
     current = obj;
     statusEl.hidden = true;
     controls.autoRotate = !reduced;
@@ -743,7 +762,10 @@ function render(i){
   el("program").textContent = s.program;
   el("game").textContent = s.game;
   el("year").textContent = s.year;
-  el("team").innerHTML = `<b>Team ${s.team}</b> · ${s.record || ""}<br><span class="award">${s.award || ""}</span>`;
+  const line = [`<b>Team ${s.team}</b>`, s.record].filter(Boolean).join(" · ");
+  el("team").innerHTML = s.award
+    ? `${line}<br><span class="award">${s.award}</span>`
+    : line;
   el("specs").replaceChildren(...Object.entries(s.specs || {}).map(([k,v])=>{
     const d = document.createElement("div");
     d.innerHTML = `<dt>${k}</dt><dd>${v}</dd>`;
