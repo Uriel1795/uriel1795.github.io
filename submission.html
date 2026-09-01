@@ -121,6 +121,13 @@ textarea{min-height:78px;resize:vertical;line-height:1.55}
   font-size:13.5px;line-height:1.6;color:var(--ink);
 }
 .notice b{font-variation-settings:"wdth" 100,"wght" 700}
+.toollink{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;
+  text-transform:uppercase;text-decoration:none;color:var(--ink-60);
+  border-bottom:1.5px solid var(--rule);padding-bottom:3px;white-space:nowrap;
+  transition:color .15s ease,border-color .15s ease;
+}
+.toollink:hover{color:var(--ink);border-color:var(--ink)}
 .menuwrap{position:relative;display:inline-block}
 .specmenu{
   position:absolute;top:calc(100% + 6px);left:0;z-index:20;min-width:210px;
@@ -141,6 +148,10 @@ textarea{min-height:78px;resize:vertical;line-height:1.55}
 .specmenu .none{
   padding:9px 10px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-60);
 }
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);line-height:1.9}
+footer a{color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--rule)}
+footer a:hover{color:var(--ink);border-color:var(--ink)}
+footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;
   position:sticky;bottom:0;background:var(--paper);padding:16px 0;
   border-top:1.5px solid var(--ink);margin-top:8px}
@@ -156,7 +167,10 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
 
   <header class="masthead">
     <div class="mark"><a href="index.html">← Robot <em>Archive</em></a> <span>Submission</span></div>
-    <div class="mono" id="counter" style="font-size:12px;color:var(--ink-60)"></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <a class="toollink" href="compress.html">Compress a model</a>
+      <div class="mono" id="counter" style="font-size:12px;color:var(--ink-60)"></div>
+    </div>
   </header>
 
   <div class="banner" id="unsupported" hidden>
@@ -253,7 +267,9 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
           <div class="filebox">
             <div>
               <div class="name" id="modelname">No model set</div>
-              <p class="hint" id="modelhint">Pick a .glb and it will be copied into models/ with the right name.</p>
+              <p class="hint" id="modelhint">Pick a .glb and it will be copied into models/ with
+                the right name. Limit is 20 MB — straight from CAD it will be far bigger, so
+                <a href="compress.html" style="color:var(--blue)">shrink it here</a> first.</p>
             </div>
             <div style="display:flex;gap:8px">
               <button type="button" class="ghost tiny" id="pickmodel">Choose .glb…</button>
@@ -332,11 +348,21 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
       </details>
     </main>
   </div>
+  <footer>
+    <div class="row">
+      <a href="index.html">Archive</a>
+      <a href="about.html">About this project</a>
+      <a href="compress.html">Compress a model</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </footer>
+
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
 const SUPPORTED = "showDirectoryPicker" in window;
+const MAX_MODEL = 20 * 1048576;   // hard limit: bigger models don't load usefully
 if (!SUPPORTED) $("unsupported").hidden = false;
 
 let dir = null;            // project directory handle
@@ -557,13 +583,19 @@ $("pickmodel").addEventListener("click", async ()=>{
   const target = modelFilename();
   $("modelname").textContent = `models/${target}`;
   $("modelhint").textContent = `${f.name} → copies to models/${target} on save (${(f.size/1048576).toFixed(1)} MB)`;
-  if (f.size > 8 * 1048576)
-    toast("That model is over 8 MB — consider optimizing it first", "err");
+  if (f.size > MAX_MODEL){
+    $("modelhint").innerHTML = `<b style="color:var(--red)">Too big to use — `
+      + `${(f.size/1048576).toFixed(1)} MB, and the limit is 20 MB.</b> `
+      + `<a href="compress.html" style="color:var(--blue)">Shrink it here first</a>, `
+      + `then come back — it usually takes about a minute.`;
+    toast("Model is over 20 MB — compress it first", "err");
+  }
 });
 $("clearmodel").addEventListener("click", ()=>{
   pendingModel = null;
   $("modelname").textContent = "No model set";
-  $("modelhint").textContent = "The site falls back to a stand-in robot when no model is set.";
+  $("modelhint").innerHTML = 'No model set — the site shows a stand-in robot instead. '
+    + '<a href="compress.html" style="color:var(--blue)">Compress a CAD file</a>';
 });
 
 /* ---- Season tables --------------------------------------------------
@@ -739,9 +771,10 @@ function fillForm(){
 
   pendingModel = null;
   $("modelname").textContent = r.model || "No model set";
-  $("modelhint").textContent = r.model
+  $("modelhint").innerHTML = r.model
     ? "Choose a new .glb to replace it."
-    : "The site falls back to a stand-in robot when no model is set.";
+    : 'No model set — the site shows a stand-in robot instead. '
+      + '<a href="compress.html" style="color:var(--blue)">Compress a CAD file</a>';
 
   pendingLogo = null; pendingNotebook = null; pendingMementos = {};
   $("logoname").textContent = r.logo || "No logo set";
@@ -831,6 +864,11 @@ $("save").addEventListener("click", async ()=>{
   const r = data[index];
   if (!r.team || !r.year || !r.program)
       return toast("Team number, Program and Year are required", "err");
+
+  if (pendingModel && pendingModel.size > MAX_MODEL){
+    toast(`Model is ${(pendingModel.size/1048576).toFixed(1)} MB — compress it first`, "err");
+    return;
+  }
 
   const clash = data.some((o,i) => i !== index &&
       (o.team||"").toLowerCase() === r.team.toLowerCase() &&

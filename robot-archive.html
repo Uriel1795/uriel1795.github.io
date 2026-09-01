@@ -65,6 +65,13 @@ body{
   letter-spacing:.06em;text-transform:uppercase;
 }
 .mast-right{display:flex;align-items:center;gap:16px}
+.toollink{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;
+  text-transform:uppercase;text-decoration:none;color:var(--ink-60);
+  border-bottom:1.5px solid var(--rule);padding-bottom:3px;white-space:nowrap;
+  transition:color .15s ease,border-color .15s ease;
+}
+.toollink:hover{color:var(--ink);border-color:var(--ink)}
 .submitlink{
   font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;
   text-transform:uppercase;text-decoration:none;color:var(--ink);
@@ -272,6 +279,10 @@ body{
   .lb-nav{font-size:26px;padding:8px}
 }
 
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);line-height:1.9}
+footer a{color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--rule)}
+footer a:hover{color:var(--ink);border-color:var(--ink)}
+footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
 .note{margin-top:26px;max-width:62ch;font-size:14px;line-height:1.65;color:var(--ink-60)}
 
 /* ---------- mobile: robot and crew become separate sections ---------- */
@@ -296,6 +307,7 @@ body{
     <div class="mark"><a href="index.html">← Robot <em>Archive</em></a></div>
     <div class="mast-right">
       <div class="count" id="count"></div>
+      <a class="toollink" href="compress.html">Compress a model</a>
       <a class="submitlink" id="submitlink" href="submission.html" hidden>+ Add robot</a>
     </div>
   </header>
@@ -353,6 +365,14 @@ body{
     <h2 class="eyebrow" id="mm-h">Mementos</h2>
     <ul class="mementos" id="mementos"></ul>
   </section>
+  <footer>
+    <div class="row">
+      <a href="index.html">Archive</a>
+      <a href="about.html">About this project</a>
+      <a href="compress.html">Compress a model</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </footer>
 </div>
 
 <div class="lightbox" id="lightbox" hidden>

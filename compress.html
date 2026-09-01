@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compress a robot model — Robot Archive</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#12171A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root{
+  --paper:#F3F4F2; --ink:#12171A; --ink-60:#5A6468; --rule:#C9CDC9;
+  --red:#E4002B; --blue:#0072CE; --alu:#B4BAB8; --stage:#151B1E;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:"Archivo",system-ui,sans-serif;font-variation-settings:"wdth" 100;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:900px;margin:0 auto;padding:20px 20px 72px}
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding-bottom:14px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap;
+}
+.mark{font-variation-settings:"wdth" 118,"wght" 800;font-size:24px;text-transform:uppercase}
+.mark em{font-style:normal;color:var(--red)}
+.mark a{color:inherit;text-decoration:none}
+.mark a:hover{color:var(--red)}
+.mark a:hover em{color:var(--ink)}
+.mark span{
+  font-variation-settings:"wdth" 100,"wght" 500;font-size:12px;letter-spacing:.16em;
+  color:var(--ink-60);margin-left:10px;
+}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-60);font-weight:500;margin:0 0 10px;
+}
+.lede{margin:22px 0 0;font-size:16px;line-height:1.65;color:var(--ink-60)}
+.lede b{color:var(--ink);font-variation-settings:"wdth" 100,"wght" 700}
+
+/* drop zone */
+.drop{
+  margin-top:26px;border:2px dashed var(--rule);background:#fff;
+  padding:44px 24px;text-align:center;transition:border-color .15s, background .15s;
+}
+.drop.over{border-color:var(--blue);background:#F2F8FE}
+.drop h2{
+  margin:0 0 6px;font-variation-settings:"wdth" 104,"wght" 700;font-size:19px;
+}
+.drop p{margin:0;font-size:13.5px;color:var(--ink-60)}
+button{
+  font:inherit;cursor:pointer;border:1.5px solid var(--ink);background:var(--ink);
+  color:var(--paper);padding:10px 18px;font-size:14px;
+  font-variation-settings:"wdth" 96,"wght" 600;
+}
+button:hover{background:#000}
+button.ghost{background:none;color:var(--ink)}
+button.ghost:hover{background:var(--ink);color:var(--paper)}
+button:disabled{opacity:.35;cursor:not-allowed}
+.drop button{margin-top:16px}
+
+/* panels */
+.panel{margin-top:26px;border:1px solid var(--rule);background:#fff;padding:20px}
+.panel[hidden]{display:none}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.stats div{background:#fff;padding:12px 14px}
+.stats dt{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-60);margin:0 0 5px;
+}
+.stats dd{margin:0;font-size:16px;font-variation-settings:"wdth" 96,"wght" 700}
+.stats dd.warn{color:var(--red)}
+
+label.ctl{display:block;margin:22px 0 8px;font-family:"IBM Plex Mono",monospace;
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.ratioline{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;
+  font-size:12px;color:var(--ink-60);margin-top:6px}
+.ratioline b{color:var(--ink)}
+
+.log{
+  margin-top:18px;background:#1B2225;color:#D6DCDA;padding:14px 16px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.65;
+  max-height:190px;overflow:auto;white-space:pre-wrap;
+}
+.log[hidden]{display:none}
+.log .ok{color:#7BD88F}
+.log .bad{color:#FF8AA0}
+
+.notice{
+  margin:0 0 18px;padding:12px 14px;background:#fff;border-left:3px solid var(--red);
+  font-size:13.5px;line-height:1.6;
+}
+.notice[hidden]{display:none}
+
+#view{display:block;width:100%;height:340px;background:var(--stage)}
+.viewwrap{margin-top:20px;position:relative}
+.viewwrap p{
+  position:absolute;right:12px;bottom:10px;margin:0;
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(243,244,242,.45);
+}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;align-items:center}
+.result{
+  font-family:"IBM Plex Mono",monospace;font-size:13px;
+}
+.result b{font-size:15px}
+footer a{color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--rule)}
+footer a:hover{color:var(--ink);border-color:var(--ink)}
+footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark"><a href="index.html">← Robot <em>Archive</em></a> <span>Compress</span></div>
+  </header>
+
+  <p class="lede">A robot straight out of CAD is usually far too big to put on a website —
+    often hundreds of megabytes. This shrinks it, normally by <b>50× or more</b>, without
+    losing anything you can actually see. It takes about a minute.<br><br>
+    <b>Your file stays on your computer.</b> Nothing is uploaded, here or anywhere else.</p>
+
+  <div class="drop" id="drop">
+    <h2>Drop a .glb here</h2>
+    <p>or</p>
+    <button type="button" id="pick">Choose a file…</button>
+    <p style="margin-top:14px">The file you exported from Blender, or from a scanning app.</p>
+  </div>
+
+  <section class="panel" id="info" hidden>
+    <p class="notice" id="sizewarn" hidden></p>
+    <h2 class="eyebrow">What you gave me</h2>
+    <dl class="stats" id="instats"></dl>
+
+    <label class="ctl" for="ratio">How much detail to keep — 25% is usually plenty</label>
+    <input type="range" id="ratio" min="10" max="100" step="5" value="25">
+    <div class="ratioline">
+      <span>smaller, loads faster</span>
+      <span>keeping <b id="ratioval">25%</b> of triangles</span>
+      <span>sharper, bigger file</span>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="go">Shrink it</button>
+      <button type="button" class="ghost" id="reset">Use a different file</button>
+      <span class="result" id="result"></span>
+    </div>
+
+    <pre class="log" id="log" hidden></pre>
+  </section>
+
+  <section class="panel" id="out" hidden>
+    <h2 class="eyebrow">Here it is</h2>
+    <dl class="stats" id="outstats"></dl>
+    <div class="viewwrap">
+      <canvas id="view"></canvas>
+      <p>drag to orbit</p>
+    </div>
+    <p class="lede" style="font-size:14px">Have a look before you download — drag to spin it
+      around. The colours should match your CAD, and the parts you care about should still be
+      recognisable. If something looks mushy, slide the detail up and try again.</p>
+    <div class="actions">
+      <button type="button" id="download">Download this version</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="row">
+      <a href="index.html">Archive</a>
+      <a href="about.html">About this project</a>
+      <a href="compress.html">Compress a model</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    Everything happens in your browser — nothing is uploaded.<br>
+    Works best in Chrome or Edge. Very large files may need a desktop rather than a laptop.
+  </footer>
+</div>
+
+<script type="module">
+import { WebIO } from "https://cdn.jsdelivr.net/npm/@gltf-transform/core@4.4.2/+esm";
+import { ALL_EXTENSIONS } from "https://cdn.jsdelivr.net/npm/@gltf-transform/extensions@4.4.2/+esm";
+import { weld, simplify, normals, dedup, prune, meshopt, draco }
+  from "https://cdn.jsdelivr.net/npm/@gltf-transform/functions@4.4.2/+esm";
+import { MeshoptSimplifier, MeshoptEncoder, MeshoptDecoder }
+  from "https://cdn.jsdelivr.net/npm/meshoptimizer@0.22.0/+esm";
+import draco3d from "https://cdn.jsdelivr.net/npm/draco3dgltf@1.5.7/+esm";
+
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder as ThreeMeshopt } from "three/addons/libs/meshopt_decoder.module.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+
+const $ = id => document.getElementById(id);
+const MB = 1048576;
+const fmt = n => n.toLocaleString();
+const mb  = b => b >= MB ? (b/MB).toFixed(1) + " MB" : Math.round(b/1024) + " KB";
+
+let file = null, outBlob = null, outName = "robot.glb";
+
+/* ---------------- file intake ---------------- */
+const drop = $("drop");
+["dragenter","dragover"].forEach(e => drop.addEventListener(e, ev => {
+  ev.preventDefault(); drop.classList.add("over");
+}));
+["dragleave","drop"].forEach(e => drop.addEventListener(e, ev => {
+  ev.preventDefault(); drop.classList.remove("over");
+}));
+drop.addEventListener("drop", ev => {
+  const f = ev.dataTransfer.files[0];
+  if (f) accept(f);
+});
+$("pick").addEventListener("click", () => {
+  const i = document.createElement("input");
+  i.type = "file"; i.accept = ".glb,model/gltf-binary";
+  i.onchange = () => i.files[0] && accept(i.files[0]);
+  i.click();
+});
+$("reset").addEventListener("click", () => location.reload());
+
+const io = new WebIO().registerExtensions(ALL_EXTENSIONS)
+  .registerDependencies({ "meshopt.decoder": MeshoptDecoder, "meshopt.encoder": MeshoptEncoder });
+
+function stat(dl, rows){
+  dl.replaceChildren(...rows.map(([k, v, warn]) => {
+    const d = document.createElement("div");
+    d.innerHTML = `<dt>${k}</dt><dd${warn ? ' class="warn"' : ""}>${v}</dd>`;
+    return d;
+  }));
+}
+
+function log(msg, cls=""){
+  const el = $("log");
+  el.hidden = false;
+  el.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+let doc = null;
+
+async function accept(f){
+  if (!f.name.toLowerCase().endsWith(".glb"))
+    return alert("This needs a .glb file.\n\nIn Blender: File \u2192 Export \u2192 glTF 2.0, and pick "
+      + "glTF Binary (.glb) from the format dropdown.");
+  file = f; outName = f.name.replace(/\.glb$/i, "") + "-compressed.glb";
+  $("info").hidden = false;
+  $("out").hidden = true;
+  $("log").hidden = true; $("log").innerHTML = "";
+  $("result").textContent = "";
+
+  const warn = $("sizewarn");
+  if (f.size > 1200 * MB){
+    warn.hidden = false;
+    warn.innerHTML = `<b>${mb(f.size)} is bigger than this page can handle.</b>
+      It's worth going back to CAD rather than fighting it: turn the mesh refinement
+      setting down to medium, and hide the screws and nuts before exporting. Either
+      one usually makes the file about ten times smaller, and neither changes how the
+      robot looks.`;
+  } else if (f.size > 500 * MB){
+    warn.hidden = false;
+    warn.innerHTML = `<b>Heads up \u2014 ${mb(f.size)} is a big file.</b>
+      This will take a few minutes, and the page will look frozen while it works.
+      That's normal. Don't close the tab.`;
+  } else warn.hidden = true;
+
+  stat($("instats"), [["Size", mb(f.size), f.size > 500*MB]]);
+
+  try {
+    log("Opening your file\u2026");
+    await frame();
+    doc = await io.readBinary(new Uint8Array(await f.arrayBuffer()));
+    const t = tris(doc), a = attrs(doc);
+    stat($("instats"), [
+      ["Size", mb(f.size), f.size > 500*MB],
+      ["Detail", fmt(t) + " triangles", t > 1_500_000],
+      ["Colours", a.includes("COLOR_0") ? "found" : "none found"],
+    ]);
+    log("Looks good \u2014 ready when you are.", "ok");
+  } catch (err){
+    log("Couldn't open that one. It may be damaged, or saved in a different format.", "bad");
+    log("Details: " + err.message);
+  }
+}
+
+const tris = d => Math.round(d.getRoot().listMeshes()
+  .flatMap(m => m.listPrimitives())
+  .reduce((n,p) => n + (p.getIndices()?.getCount() ?? p.getAttribute("POSITION").getCount())/3, 0));
+const attrs = d => [...new Set(d.getRoot().listMeshes()
+  .flatMap(m => m.listPrimitives()).flatMap(p => p.listSemantics()))];
+
+const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+/* ---------------- ratio control ---------------- */
+$("ratio").addEventListener("input", e => {
+  $("ratioval").textContent = e.target.value + "%";
+});
+
+/* ---------------- the pipeline ---------------- */
+$("go").addEventListener("click", async () => {
+  if (!doc) return;
+  const ratio = Number($("ratio").value) / 100;
+  $("go").disabled = true;
+  $("out").hidden = true;
+  $("log").innerHTML = "";
+
+  try {
+    const before = tris(doc);
+    log(`Working on it \u2014 ${fmt(before)} triangles to get through.`);
+    await frame();
+
+    /* CAD exports give every face its own normals, so no two vertices match
+       and nothing can be welded or simplified. Dropping NORMAL fixes that. */
+    for (const mesh of doc.getRoot().listMeshes())
+      for (const prim of mesh.listPrimitives())
+        prim.setAttribute("NORMAL", null);
+    log("Step 1 of 4 \u2014 tidying up the surfaces\u2026");
+    await frame();
+
+    await doc.transform(weld());
+    log("Step 2 of 4 \u2014 joining up shared corners\u2026");
+    await frame();
+
+    await MeshoptSimplifier.ready;
+    await doc.transform(
+      simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.002 }),
+      dedup(), prune(),
+    );
+    log(`Step 3 of 4 \u2014 down to ${fmt(tris(doc))} triangles.`);
+    await frame();
+
+    /* Essential — without normals nothing lights the surface and the whole
+       model renders flat grey, whatever colours it carries. */
+    await doc.transform(normals({ overwrite: true }));
+    log("Step 4 of 4 \u2014 restoring the shading\u2026");
+    await frame();
+
+    /* Draco compresses this kind of geometry far harder than meshopt
+       (2.7 MB vs 9.1 MB on a test drivebase). Meshopt is the fallback if the
+       Draco encoder can't load. Both are decoded by the archive viewer. */
+    let usedDraco = false;
+    try {
+      const enc = await draco3d.createEncoderModule({});
+      io.registerDependencies({ "draco3d.encoder": enc });
+      await doc.transform(draco());
+      usedDraco = true;
+      log("Squeezing the file down\u2026");
+    } catch (e) {
+      log("Using the backup compressor \u2014 your file will work fine, just a little larger.");
+      await MeshoptEncoder.ready;
+      await doc.transform(meshopt({ encoder: MeshoptEncoder }));
+    }
+    await frame();
+
+    const bytes = await io.writeBinary(doc);
+    outBlob = new Blob([bytes], { type: "model/gltf-binary" });
+
+    const factor = (file.size / outBlob.size).toFixed(0);
+    log(`Finished \u2014 ${mb(file.size)} became ${mb(outBlob.size)}.`, "ok");
+    $("result").innerHTML = `<b>${mb(file.size)} → ${mb(outBlob.size)}</b> · ${factor}× smaller`;
+
+    stat($("outstats"), [
+      ["Size", mb(outBlob.size)],
+      ["Detail", fmt(tris(doc)) + " triangles"],
+      ["Now", factor + "× smaller"],
+      ["Colours", attrs(doc).includes("COLOR_0") ? "kept" : "none in file"],
+    ]);
+    $("out").hidden = false;
+    preview(outBlob);
+  } catch (err){
+    log("That didn't work.", "bad");
+    log("Most often this means the file was too big for the browser to hold. Try");
+    log("moving the slider left, or re-export from CAD with lower mesh refinement.");
+    log("Details: " + err.message);
+  } finally {
+    $("go").disabled = false;
+  }
+});
+
+$("download").addEventListener("click", () => {
+  if (!outBlob) return;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(outBlob);
+  a.download = outName;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+
+/* ---------------- preview, so colours can be checked ---------------- */
+let renderer, scene, camera, controls, current;
+function initView(){
+  const canvas = $("view");
+  renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.95;
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x151B1E);
+  camera = new THREE.PerspectiveCamera(38, 2, .01, 5000);
+  controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = .7;
+  canvas.addEventListener("pointerdown", () => controls.autoRotate = false);
+  scene.add(new THREE.HemisphereLight(0xdfe6e8, 0x2a3134, .8));
+  const key = new THREE.DirectionalLight(0xffffff, 1.5);
+  key.position.set(4, 8, 5); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x8fb4d6, .6);
+  rim.position.set(-5, 3, -4); scene.add(rim);
+  (function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+}
+
+function preview(blob){
+  if (!renderer) initView();
+  const url = URL.createObjectURL(blob);
+  const dracoLoader = new DRACOLoader().setDecoderPath(
+    "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/");
+  const loader = new GLTFLoader()
+    .setMeshoptDecoder(ThreeMeshopt)
+    .setDRACOLoader(dracoLoader);
+  loader.load(url, gltf => {
+    if (current) scene.remove(current);
+    current = gltf.scene;
+    scene.add(current);
+    const box = new THREE.Box3().setFromObject(current);
+    const size = box.getSize(new THREE.Vector3());
+    const c = box.getCenter(new THREE.Vector3());
+    const r = 0.5 * size.length();
+    const dist = r / Math.sin(THREE.MathUtils.degToRad(camera.fov) / 2) * 0.85;
+    camera.near = r / 100; camera.far = r * 100;
+    camera.position.copy(c).add(new THREE.Vector3(0.6, 0.4, 0.7).normalize().multiplyScalar(dist));
+    controls.target.copy(c);
+    controls.update();
+    resize();
+    URL.revokeObjectURL(url);
+  }, undefined, err => log("The file compressed fine, but couldn't be previewed here. "
+        + "It should still work \u2014 download it and check.", "bad"));
+}
+
+function resize(){
+  if (!renderer) return;
+  const c = $("view");
+  renderer.setSize(c.clientWidth, c.clientHeight, false);
+  camera.aspect = c.clientWidth / c.clientHeight;
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize);
+</script>
+</body>
+</html>

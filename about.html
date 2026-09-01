@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About — Robot Archive</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#12171A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F4F2; --ink:#12171A; --ink-60:#5A6468; --rule:#C9CDC9;
+  --red:#E4002B; --blue:#0072CE; --alu:#B4BAB8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:"Archivo",system-ui,sans-serif;font-variation-settings:"wdth" 100;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:680px;margin:0 auto;padding:20px 20px 72px}
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding-bottom:14px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap;
+}
+.mark{font-variation-settings:"wdth" 118,"wght" 800;font-size:clamp(18px,2.4vw,26px);
+  letter-spacing:-.01em;text-transform:uppercase}
+.mark em{font-style:normal;color:var(--red)}
+.mark a{color:inherit;text-decoration:none}
+.mark a:hover{color:var(--red)}
+.mark a:hover em{color:var(--ink)}
+.mark span{font-variation-settings:"wdth" 100,"wght" 500;font-size:12px;
+  letter-spacing:.16em;color:var(--ink-60);margin-left:10px}
+
+h1{font-variation-settings:"wdth" 110,"wght" 800;font-size:clamp(32px,5.5vw,50px);
+  letter-spacing:-.03em;text-transform:uppercase;margin:36px 0 0;line-height:.96}
+.standfirst{
+  font-size:19px;line-height:1.6;color:var(--ink-60);margin:18px 0 0;
+}
+h2{font-variation-settings:"wdth" 104,"wght" 700;font-size:21px;margin:44px 0 12px;
+  letter-spacing:-.01em}
+p{font-size:16.5px;line-height:1.75}
+a{color:var(--blue)}
+.rule{border:0;border-top:1px solid var(--rule);margin:40px 0}
+
+blockquote{
+  margin:30px 0;padding:0 0 0 20px;border-left:3px solid var(--red);
+  font-size:18px;line-height:1.6;font-variation-settings:"wdth" 100,"wght" 600;
+}
+
+.principles{list-style:none;padding:0;margin:22px 0 0}
+.principles li{margin-bottom:20px;font-size:16px;line-height:1.7}
+.principles b{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60);margin-bottom:5px;
+  font-weight:600;
+}
+
+footer{
+  margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);line-height:1.9;
+}
+footer a{color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--rule)}
+footer a:hover{color:var(--ink);border-color:var(--ink)}
+footer .row{display:flex;gap:18px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark"><a href="index.html">← Robot <em>Archive</em></a> <span>About</span></div>
+  </header>
+
+  <h1>Robots don't survive the season</h1>
+
+  <p class="standfirst">Every spring the same thing happens. The robot comes apart, the
+    parts go back in the bin, and next year's team builds something new out of them.
+    Within a few weeks there's nothing left of a build that took eight months except a
+    few blurry photos on somebody's phone.</p>
+
+  <p>That's what this is for. It's an archive of the robots built in this program —
+    each one in 3D, so you can turn it around and look at how it was actually put
+    together, alongside the engineering notebook and whatever the team wants to keep
+    with it.</p>
+
+  <p>It exists because those robots deserve better than a bin. A team spends a season
+    solving a genuinely hard problem, and the solution is thrown away as soon as it
+    stops being useful. Meanwhile the next team starts from scratch on a problem
+    somebody two years ago already worked out.</p>
+
+  <blockquote>An eighth grader should be able to look at what a team built in 2021 and
+    understand how they solved it.</blockquote>
+
+  <h2>What goes in it</h2>
+
+  <p>Robots, season by season, team by team. A 3D model you can orbit, taken from CAD
+    where the team modelled it and from photogrammetry where they didn't. The judges
+    notebook if there is one. And mementos — the first drivetrain that got scrapped in
+    October, the pit table at states, the bracket someone bent by hand on competition
+    morning. Those last things are often what people actually remember.</p>
+
+  <p>Nothing appears until after Worlds, or until the team has shown the robot publicly
+    themselves. Nobody should have to choose between contributing to this and protecting
+    a competitive advantage.</p>
+
+  <h2>How it's built</h2>
+
+  <ul class="principles">
+    <li><b>No student names or faces</b>
+      The archive is about the robots. Publishing photos of minors on a public website
+      creates problems that aren't mine to create, so it doesn't. If you want to know
+      who built something, ask them.</li>
+    <li><b>Nothing is collected</b>
+      No accounts, no sign-ups, no tracking, no email addresses stored. Submitting
+      doesn't require telling me who you are.</li>
+    <li><b>Anything comes down on request</b>
+      No reason needed. See <a href="contact.html">contact</a>.</li>
+    <li><b>Built to outlast me</b>
+      Plain files, open formats, no proprietary viewer. If this project stops being
+      maintained, the models are still <code>.glb</code> files anybody can open.</li>
+  </ul>
+
+  <hr class="rule">
+
+  <p style="color:var(--ink-60);font-size:15px">Built and maintained by one person, in
+    evenings and weekends. It is not an official VEX or REC Foundation project, and it
+    isn't run by any school or district. If something here should be different, the
+    fastest way to change it is to <a href="contact.html">say so</a>.</p>
+
+  <footer>
+    <div class="row">
+      <a href="index.html">Archive</a>
+      <a href="about.html">About this project</a>
+      <a href="compress.html">Compress a model</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

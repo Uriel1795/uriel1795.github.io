@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact — Robot Archive</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#12171A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F4F2; --ink:#12171A; --ink-60:#5A6468; --rule:#C9CDC9;
+  --red:#E4002B; --blue:#0072CE; --alu:#B4BAB8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:"Archivo",system-ui,sans-serif;font-variation-settings:"wdth" 100;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:720px;margin:0 auto;padding:20px 20px 72px}
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding-bottom:14px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap;
+}
+.mark{font-variation-settings:"wdth" 118,"wght" 800;font-size:clamp(18px,2.4vw,26px);
+  letter-spacing:-.01em;text-transform:uppercase}
+.mark em{font-style:normal;color:var(--red)}
+.mark a{color:inherit;text-decoration:none}
+.mark a:hover{color:var(--red)}
+.mark a:hover em{color:var(--ink)}
+.mark span{font-variation-settings:"wdth" 100,"wght" 500;font-size:12px;
+  letter-spacing:.16em;color:var(--ink-60);margin-left:10px}
+
+h1{font-variation-settings:"wdth" 110,"wght" 800;font-size:clamp(30px,4.5vw,42px);
+  letter-spacing:-.025em;text-transform:uppercase;margin:34px 0 0;line-height:.98}
+h2{font-variation-settings:"wdth" 102,"wght" 700;font-size:19px;margin:38px 0 10px}
+p{font-size:16px;line-height:1.7;color:var(--ink)}
+p.sub{color:var(--ink-60)}
+a{color:var(--blue)}
+
+.mailbox{
+  margin:28px 0 0;padding:24px;background:#fff;border:1px solid var(--rule);
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+}
+.mailbox .addr{
+  font-family:"IBM Plex Mono",monospace;font-size:17px;font-weight:600;
+  word-break:break-all;
+}
+.mailbox a.btn{
+  margin-left:auto;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);
+  padding:10px 18px;text-decoration:none;font-size:14px;
+  font-variation-settings:"wdth" 96,"wght" 600;white-space:nowrap;
+}
+.mailbox a.btn:hover{background:#000}
+
+.notice{
+  margin:26px 0 0;padding:16px 18px;background:#fff;border-left:3px solid var(--red);
+  font-size:15px;line-height:1.65;
+}
+.notice b{font-variation-settings:"wdth" 100,"wght" 700}
+
+ul{padding-left:20px}
+li{font-size:16px;line-height:1.7;margin-bottom:9px}
+li b{font-variation-settings:"wdth" 100,"wght" 700}
+
+footer{
+  margin-top:52px;padding-top:18px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);line-height:1.9;
+}
+footer a{color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--rule)}
+footer a:hover{color:var(--ink);border-color:var(--ink)}
+footer .row{display:flex;gap:18px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark"><a href="index.html">← Robot <em>Archive</em></a> <span>Contact</span></div>
+  </header>
+
+  <h1>Get in touch</h1>
+  <p class="sub">One address, and it reaches a person rather than a queue.</p>
+
+  <div class="mailbox">
+    <div class="addr" id="addr">archive@robotarchive.net</div>
+    <a class="btn" href="mailto:archive@robotarchive.net">Send an email</a>
+  </div>
+
+  <div class="notice">
+    <b>Please have an adult send it.</b> A parent, teacher or coach. This site is built
+    around student work, and I've deliberately set it up so it never collects anything
+    about the students themselves — no accounts, no sign-ups, no email addresses stored.
+    Keeping email to adults is part of that. If you're a student, ask your coach to
+    write on your behalf, or mention it to me in person at a competition.
+  </div>
+
+  <h2>What to write about</h2>
+  <ul>
+    <li><b>Taking something down.</b> If you or your team would rather a robot, a
+      notebook or a photo weren't here, say so and it comes down. You don't have to
+      give a reason, and I won't ask for one.</li>
+    <li><b>Something's wrong.</b> A team number, a season, an award, a name spelled
+      badly. Corrections are welcome and quick.</li>
+    <li><b>A rejected submission.</b> If it was turned down and the reason doesn't make
+      sense, or you're not sure how to fix it.</li>
+    <li><b>Adding an older robot.</b> If you have CAD or photos of a robot from a past
+      season that isn't here yet, that's exactly what this archive is short of.</li>
+  </ul>
+
+  <h2>What not to send</h2>
+  <p>Don't email photos of students, or lists of names. The archive doesn't publish
+    student faces, and I'd rather not receive them in the first place. Submit robots
+    through the <a href="submission.html">submission form</a> instead.</p>
+
+  <h2>Response time</h2>
+  <p>This is a side project, run by one person, so it may take a few days. Takedown
+    requests jump the queue — those get handled the same day I see them.</p>
+
+  <footer>
+    <div class="row">
+      <a href="index.html">Archive</a>
+      <a href="about.html">About this project</a>
+      <a href="compress.html">Compress a model</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </footer>
+</div>
+</body>
+</html>
