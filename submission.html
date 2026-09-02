@@ -175,22 +175,14 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
     </div>
   </header>
 
-  <div class="banner" id="unsupported" hidden>
-    <b>This browser can't write files.</b> The File System Access API is Chrome/Edge only.
-    You can still fill in the form and use <b>Download robots.json</b> at the bottom, then
-    replace the file yourself and copy models into <code>models/</code> and photos into
-    <code>photos/</code> by hand.
-  </div>
+  <div class="banner" id="livenote" hidden></div>
 
-  <div class="banner" id="livenote" hidden>
-    <b>This page only works on your own computer.</b> It edits files in the project
-    folder directly, so there is nothing for it to do here on the live site.
-    Looking to send in a robot? <a href="contact.html">Get in touch</a>.
-  </div>
-
-  <div class="projbar" id="projbar">
-    <button id="pick">Open project folder…</button>
-    <div class="path" id="projpath">No folder open — pick the folder containing <b>index.html</b></div>
+  <div class="projbar" id="signinbar">
+    <div class="path" id="whoami">Checking…</div>
+    <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password"
+           style="flex:1 1 220px;max-width:280px;padding:8px 10px;border:1px solid var(--rule);font:inherit;font-size:14px">
+    <button id="signin">Sign in</button>
+    <button class="ghost" id="signout" hidden>Sign out</button>
   </div>
 
   <div class="cols">
@@ -370,20 +362,19 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
 <script>
 const $ = id => document.getElementById(id);
 
-/* The folder picker is meaningless away from a local checkout — it would open
-   the visitor's own filesystem. Hide the whole tool on the live site. */
-(function(){
-  const local = ["localhost","127.0.0.1","[::1]",""].includes(location.hostname);
-  if (local) return;
-  document.getElementById("projbar").hidden = true;
-  document.getElementById("livenote").hidden = false;
-  document.querySelector(".cols").hidden = true;
-})();
-const SUPPORTED = "showDirectoryPicker" in window;
-const MAX_MODEL = 20 * 1048576;   // hard limit: bigger models don't load usefully
-if (!SUPPORTED) $("unsupported").hidden = false;
+/* Point this at your API. Everything below talks to it; nothing touches
+   the local filesystem any more. */
+const API = "https://robot-archive-api-production.up.railway.app";
 
-let dir = null;            // project directory handle
+const MAX_MODEL = 20 * 1048576;   // matches the server's limit
+const api = (path, opts = {}) =>
+  fetch(API + path, {
+    credentials: "include",          // the session is a cookie
+    headers: opts.body ? { "Content-Type": "application/json" } : {},
+    ...opts,
+  });
+
+let signedIn = false;
 let data = [];             // the robots array
 let index = -1;            // selected robot
 let pendingModel = null;   // File waiting to be copied on save
@@ -398,36 +389,69 @@ function toast(msg, kind=""){
   if (msg) setTimeout(()=>{ if (t.textContent === msg) t.textContent = ""; }, 5000);
 }
 
-/* ---------------- project folder ---------------- */
-$("pick").addEventListener("click", async ()=>{
-  if (!SUPPORTED) return toast("Not supported in this browser", "err");
+/* ---------------- sign in ---------------- */
+async function refreshAuth(){
   try {
-    dir = await window.showDirectoryPicker({ mode:"readwrite" });
-    $("projpath").innerHTML = `Open: <b>${dir.name}/</b>`;
-    await loadJson();
-    toast(`Loaded ${data.length} robots`, "ok");
-  } catch (err) {
-    if (err.name !== "AbortError") toast(err.message, "err");
-  }
-});
-
-async function loadJson(){
-  try {
-    const fh = await dir.getFileHandle("robots.json");
-    const txt = await (await fh.getFile()).text();
-    data = JSON.parse(txt);
-    if (!Array.isArray(data)) throw new Error("robots.json is not an array");
-  } catch (err) {
-    if (err.name === "NotFoundError"){
-      data = [];
-      toast("No robots.json yet — will create one", "ok");
-    } else {
-      toast("Could not read robots.json: " + err.message, "err");
+    const me = await (await api("/api/me")).json();
+    signedIn = me.signedIn;
+    if (!me.authConfigured){
+      $("whoami").innerHTML = "<b>Sign-in isn't set up on the server.</b>";
+      $("signin").disabled = true;
       return;
     }
+    $("whoami").innerHTML = signedIn
+      ? "Signed in" + (me.storageConfigured ? "" : " \u2014 <b>file uploads are not configured</b>")
+      : "Not signed in";
+    $("pw").hidden = signedIn;
+    $("signin").hidden = signedIn;
+    $("signout").hidden = !signedIn;
+    document.querySelector(".cols").hidden = !signedIn;
+    if (signedIn) await loadRobots();
+  } catch (err) {
+    $("whoami").innerHTML = `<b>Can't reach the API.</b> ${API}`;
+    $("livenote").innerHTML =
+      "<b>The server isn't responding.</b> Check that the API is deployed and that " +
+      "this page's origin is listed in <code>ALLOWED_ORIGIN</code>.";
+    $("livenote").hidden = false;
+    document.querySelector(".cols").hidden = true;
   }
-  index = data.length ? data.length - 1 : -1;
-  renderList(); fillForm(); renderJson();
+}
+
+async function signIn(){
+  const password = $("pw").value;
+  if (!password) return toast("Enter the password", "err");
+  $("signin").disabled = true;
+  try {
+    const res = await api("/api/login", { method:"POST", body: JSON.stringify({ password }) });
+    if (!res.ok) return toast(res.status === 401 ? "Wrong password" : "Sign-in failed", "err");
+    $("pw").value = "";
+    await refreshAuth();
+    toast("Signed in", "ok");
+  } catch {
+    toast("Could not reach the server", "err");
+  } finally {
+    $("signin").disabled = false;
+  }
+}
+
+$("signin").addEventListener("click", signIn);
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") signIn(); });
+$("signout").addEventListener("click", async ()=>{
+  await api("/api/logout", { method:"POST" });
+  await refreshAuth();
+  toast("Signed out", "ok");
+});
+
+async function loadRobots(){
+  try {
+    const res = await api("/api/robots");
+    if (!res.ok) throw new Error(`the API returned ${res.status}`);
+    data = await res.json();
+    index = data.length ? data.length - 1 : -1;
+    renderList(); fillForm(); renderJson();
+  } catch (err) {
+    toast("Could not load robots: " + err.message, "err");
+  }
 }
 
 /* ---------------- list ---------------- */
@@ -578,18 +602,16 @@ document.addEventListener("keydown", e=>{
   if (e.key === "Escape" && !$("specmenu").hidden){ closeSpecMenu(); $("addspec").focus(); }
 });
 
-/* ---------------- file pickers ---------------- */
-async function pickFile(types){
-  if (SUPPORTED){
-    try {
-      const [h] = await window.showOpenFilePicker({ types, multiple:false });
-      return await h.getFile();
-    } catch (err) { if (err.name !== "AbortError") toast(err.message, "err"); return null; }
-  }
-  return new Promise(res=>{
+/* ---------------- file picker ---------------- */
+/* A plain file input, so this works in every browser. Nothing needs the
+   File System Access API any more — uploads go to R2, not to disk. */
+function pickFile(types){
+  const accept = types.flatMap(t => Object.values(t.accept ?? {}).flat()).join(",");
+  return new Promise(res => {
     const i = document.createElement("input");
     i.type = "file";
-    i.onchange = ()=>res(i.files[0] || null);
+    if (accept) i.accept = accept;
+    i.onchange = () => res(i.files[0] || null);
     i.click();
   });
 }
@@ -866,64 +888,87 @@ function commit(){
   if (!r.mementos.length) delete r.mementos;
 }
 
-/* ---------------- writing ---------------- */
-async function writeInto(dirName, filename, file){
-  const d = await dir.getDirectoryHandle(dirName, { create:true });
-  const fh = await d.getFileHandle(filename, { create:true });
-  const w = await fh.createWritable();
-  await w.write(await file.arrayBuffer());
-  await w.close();
+/* ---------------- saving, via the API ---------------- */
+
+/**
+ * Uploads one file straight to R2. The server hands back a presigned URL and
+ * the file goes browser-to-storage — it never passes through the API.
+ */
+async function upload(kind, file, { team, year, index: idx = 0 }){
+  const res = await api("/api/uploads", {
+    method: "POST",
+    body: JSON.stringify({ kind, filename: file.name, size: file.size, team, year, index: idx }),
+  });
+  const info = await res.json();
+  if (!res.ok) throw new Error(info.error || `upload could not be prepared (${res.status})`);
+
+  const put = await fetch(info.uploadUrl, { method: "PUT", body: file });
+  if (!put.ok) throw new Error(`storage rejected the upload (${put.status})`);
+  return info.publicUrl || info.key;
 }
 
 $("save").addEventListener("click", async ()=>{
   commit(); renderList(); renderJson();
-  if (!dir) return toast("Open the project folder first", "err");
+  if (!signedIn) return toast("Sign in first", "err");
 
   const r = data[index];
   if (!r.team || !r.year || !r.program)
-      return toast("Team number, Program and Year are required", "err");
+    return toast("Team number, Program and Year are required", "err");
 
   if (pendingModel && pendingModel.size > MAX_MODEL){
-    toast(`Model is ${(pendingModel.size/1048576).toFixed(1)} MB — compress it first`, "err");
+    toast(`Model is ${(pendingModel.size/1048576).toFixed(1)} MB \u2014 compress it first`, "err");
     return;
   }
 
-  const clash = data.some((o,i) => i !== index &&
-      (o.team||"").toLowerCase() === r.team.toLowerCase() &&
-      (o.year||"").slice(0,4) === (r.year||"").slice(0,4));
-  if (clash) return toast(`Team ${r.team} already has a robot for ${r.year}`, "err");
+  const meta = { team: r.team, year: r.year };
+  $("save").disabled = true;
 
   try {
     if (pendingModel){
-      await writeInto("models", modelFilename(), pendingModel);
+      toast("Uploading model\u2026");
+      r.model = await upload("model", pendingModel, meta);
       pendingModel = null;
     }
     if (pendingLogo){
-      await writeInto("logos", logoFilename(pendingLogo), pendingLogo);
+      toast("Uploading logo\u2026");
+      r.logo = await upload("logo", pendingLogo, meta);
       pendingLogo = null;
     }
     if (pendingNotebook){
-      await writeInto("notebooks", notebookFilename(), pendingNotebook);
+      toast("Uploading notebook\u2026");
+      const url = await upload("notebook", pendingNotebook, meta);
+      r.notebook = { ...(r.notebook || {}), file: url };
       pendingNotebook = null;
     }
-    {
-      const rows = [...$("mementos").children];
-      for (let i = 0; i < rows.length; i++){
-        const file = pendingMementos[rows[i].dataset.id];
-        if (file) await writeInto("mementos", mementoFilename(i, file), file);
-      }
-      pendingMementos = {};
+
+    const rows = [...$("mementos").children];
+    for (let i = 0; i < rows.length; i++){
+      const file = pendingMementos[rows[i].dataset.id];
+      if (!file) continue;
+      toast(`Uploading memento ${i + 1}\u2026`);
+      const url = await upload("memento", file, { ...meta, index: i });
+      r.mementos = r.mementos || [];
+      r.mementos[i] = { ...(r.mementos[i] || {}), image: url };
+    }
+    pendingMementos = {};
+
+    toast("Saving\u2026");
+    const res = await api("/api/robots", { method: "POST", body: JSON.stringify(r) });
+    const out = await res.json();
+
+    if (!res.ok){
+      const why = (out.errors || [out.error || "save failed"]).join("  ");
+      return toast(why, "err");
     }
 
-    const fh = await dir.getFileHandle("robots.json", { create:true });
-    const w = await fh.createWritable();
-    await w.write(JSON.stringify(data, null, 2) + "\n");
-    await w.close();
+    if (out.warnings?.length) toast(out.warnings.join("  \u00b7  "), "err");
+    else toast(out.created ? "Added" : "Updated", "ok");
 
-    fillForm();
-    toast("Saved — commit and push when ready", "ok");
+    await loadRobots();
   } catch (err) {
-    toast("Save failed: " + err.message, "err");
+    toast(err.message, "err");
+  } finally {
+    $("save").disabled = false;
   }
 });
 
@@ -935,17 +980,23 @@ $("download").addEventListener("click", ()=>{
   a.download = "robots.json";
   a.click();
   URL.revokeObjectURL(a.href);
-  toast("Downloaded — model and photo files still need copying by hand", "ok");
+  toast("Downloaded a copy of the data", "ok");
 });
 
-$("del").addEventListener("click", ()=>{
+$("del").addEventListener("click", async ()=>{
   if (index < 0) return;
   const r = data[index];
-  if (!confirm(`Delete "${r.game || "Untitled"} ${r.year || ""}"?\n\nThis edits robots.json only — the .glb and photos stay on disk.`)) return;
-  data.splice(index, 1);
-  index = Math.min(index, data.length - 1);
-  renderList(); fillForm(); renderJson();
-  toast("Removed — press Save to write it out", "ok");
+  if (!confirm(`Delete "${r.game || "Untitled"} ${r.year || ""}" for team ${r.team}?\n\n` +
+               `This removes the entry. Files already uploaded stay in storage.`)) return;
+  try {
+    const res = await api(`/api/robots/${encodeURIComponent(r.team)}/${(r.year||"").slice(0,4)}`,
+                          { method: "DELETE" });
+    if (!res.ok) throw new Error((await res.json()).error || `failed (${res.status})`);
+    toast("Deleted", "ok");
+    await loadRobots();
+  } catch (err) {
+    toast(err.message, "err");
+  }
 });
 
 function renderJson(){ $("json").textContent = JSON.stringify(data, null, 2); }
@@ -963,6 +1014,7 @@ $("f-year").addEventListener("blur", ()=>{
 });
 $("form").addEventListener("input", ()=>{ commit(); renderJson(); renderList(); });
 renderList(); fillForm();
+refreshAuth();
 </script>
 </body>
 </html>

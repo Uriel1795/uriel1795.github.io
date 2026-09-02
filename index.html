@@ -161,7 +161,7 @@ footer{
     <div class="mast-right">
       <div class="count" id="count"></div>
       <a class="toollink" href="compress.html">Compress a model</a>
-      <a class="submitlink" id="submitlink" href="submission.html" hidden>+ Add robot</a>
+      <a class="submitlink" id="submitlink" href="submission.html">+ Add robot</a>
     </div>
   </header>
 
@@ -188,14 +188,6 @@ footer{
     <span id="foot"></span>
   </footer>
 </div>
-
-<script>
-(function(){
-  const local = ["localhost","127.0.0.1","[::1]",""].includes(location.hostname);
-  const el = document.getElementById("submitlink");
-  if (local && el) el.hidden = false;
-})();
-</script>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -279,7 +271,7 @@ function card(s, history){
 (async function(){
   let data;
   try {
-    const res = await fetch("robots.json", {cache:"no-cache"});
+    const res = await fetch("https://robot-archive-api-production.up.railway.app/api/robots", {cache:"no-cache"});
     if (!res.ok) throw new Error(`robots.json returned ${res.status}`);
     data = await res.json();
     if (!Array.isArray(data) || !data.length) throw new Error("robots.json is empty");

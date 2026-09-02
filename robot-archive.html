@@ -308,7 +308,7 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
     <div class="mast-right">
       <div class="count" id="count"></div>
       <a class="toollink" href="compress.html">Compress a model</a>
-      <a class="submitlink" id="submitlink" href="submission.html" hidden>+ Add robot</a>
+      <a class="submitlink" id="submitlink" href="submission.html">+ Add robot</a>
     </div>
   </header>
 
@@ -384,17 +384,6 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
   </figure>
   <button class="lb-nav lb-next" id="lb-next" aria-label="Next">&#8250;</button>
 </div>
-
-<script>
-/* The submission page only works locally, so the link is hidden on the
-   deployed site. Delete this block and the `hidden` attribute on the link
-   in the masthead to show it everywhere. */
-(function(){
-  const local = ["localhost","127.0.0.1","[::1]",""].includes(location.hostname);
-  const el = document.getElementById("submitlink");
-  if (local && el) el.hidden = false;
-})();
-</script>
 
 <script type="module">
 import * as THREE from "three";
