@@ -397,22 +397,20 @@ const el = id => document.getElementById(id);
 const statusEl = el("status");
 
 /* ============================================================
-   Data lives in robots.json. Edit that file to add a robot —
-   you should never need to touch this one again.
-   Note: fetch() is blocked on file:// URLs, so while editing
-   locally run:  python3 -m http.server 8000
+   Data comes from the API. Point DATA_URL at "robots.json" to fall back to
+   the static file in this repo if the API is ever down.
    ============================================================ */
+const DATA_URL = "https://robot-archive-api-production.up.railway.app/api/robots";
+
 let SEASONS = [];
 try {
-  const res = await fetch("robots.json", {cache:"no-cache"});
-  if (!res.ok) throw new Error(`robots.json returned ${res.status}`);
+  const res = await fetch(DATA_URL, {cache:"no-cache"});
+  if (!res.ok) throw new Error(`the archive returned ${res.status}`);
   SEASONS = await res.json();
-  if (!Array.isArray(SEASONS) || !SEASONS.length) throw new Error("robots.json is empty");
+  if (!Array.isArray(SEASONS)) throw new Error("unexpected response");
 } catch (err) {
   statusEl.className = "status error";
-  statusEl.textContent = location.protocol === "file:"
-    ? "Open this through a local server, not by double-clicking the file. In this folder run: python3 -m http.server 8000"
-    : `Could not load robots.json — ${err.message}. Check the JSON for a stray comma.`;
+  statusEl.textContent = `Could not load the archive \u2014 ${err.message}.`;
   throw err;
 }
 

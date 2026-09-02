@@ -268,19 +268,26 @@ function card(s, history){
   return art;
 }
 
+/* Where the archive's data comes from. Point this at "robots.json" to fall
+   back to the static file in this repo — useful if the API is ever down. */
+const DATA_URL = "https://robot-archive-api-production.up.railway.app/api/robots";
+
 (async function(){
   let data;
   try {
-    const res = await fetch("https://robot-archive-api-production.up.railway.app/api/robots", {cache:"no-cache"});
-    if (!res.ok) throw new Error(`robots.json returned ${res.status}`);
+    const res = await fetch(DATA_URL, {cache:"no-cache"});
+    if (!res.ok) throw new Error(`the archive returned ${res.status}`);
     data = await res.json();
-    if (!Array.isArray(data) || !data.length) throw new Error("robots.json is empty");
+    if (!Array.isArray(data)) throw new Error("unexpected response");
   } catch (err) {
     const s = $("status");
     s.className = "status error";
-    s.textContent = location.protocol === "file:"
-      ? "Open this through a local server, not by double-clicking the file. In this folder run: python3 -m http.server 8000"
-      : `Could not load robots.json — ${err.message}`;
+    s.textContent = `Could not load the archive \u2014 ${err.message}.`;
+    return;
+  }
+  if (!data.length) {
+    const s = $("status");
+    s.textContent = "No robots in the archive yet.";
     return;
   }
   $("status").hidden = true;
