@@ -55,6 +55,8 @@ button.tiny{padding:4px 9px;font-size:11.5px;font-family:"IBM Plex Mono",monospa
 button:disabled{opacity:.35;cursor:not-allowed}
 
 /* project bar */
+.projbar[hidden]{display:none}
+.cols[hidden]{display:none}
 .projbar{
   display:flex;align-items:center;gap:14px;flex-wrap:wrap;
   margin-top:18px;padding:14px 16px;background:var(--alu);
@@ -180,7 +182,13 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
     <code>photos/</code> by hand.
   </div>
 
-  <div class="projbar">
+  <div class="banner" id="livenote" hidden>
+    <b>This page only works on your own computer.</b> It edits files in the project
+    folder directly, so there is nothing for it to do here on the live site.
+    Looking to send in a robot? <a href="contact.html">Get in touch</a>.
+  </div>
+
+  <div class="projbar" id="projbar">
     <button id="pick">Open project folder…</button>
     <div class="path" id="projpath">No folder open — pick the folder containing <b>index.html</b></div>
   </div>
@@ -361,6 +369,16 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
 
 <script>
 const $ = id => document.getElementById(id);
+
+/* The folder picker is meaningless away from a local checkout — it would open
+   the visitor's own filesystem. Hide the whole tool on the live site. */
+(function(){
+  const local = ["localhost","127.0.0.1","[::1]",""].includes(location.hostname);
+  if (local) return;
+  document.getElementById("projbar").hidden = true;
+  document.getElementById("livenote").hidden = false;
+  document.querySelector(".cols").hidden = true;
+})();
 const SUPPORTED = "showDirectoryPicker" in window;
 const MAX_MODEL = 20 * 1048576;   // hard limit: bigger models don't load usefully
 if (!SUPPORTED) $("unsupported").hidden = false;

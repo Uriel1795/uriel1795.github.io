@@ -151,7 +151,7 @@
     "game": "Override",
     "year": "2026–27",
     "team": "5675D",
-    "model": "models/5675d-2026.glb",
+    "model": "https://models.robotarchive.net/models/5675d-2026.glb",
     "award": "",
     "record": "",
     "specs": {},
