@@ -97,6 +97,27 @@ body{
   background:var(--paper);padding:16px 20px 18px;max-width:340px;
   box-shadow:0 18px 40px rgba(0,0,0,.35);
 }
+.platetoggle{
+  position:absolute;top:10px;right:10px;width:26px;height:26px;padding:0;
+  border:1px solid var(--rule);background:var(--paper);cursor:pointer;
+  display:grid;place-items:center;
+}
+.platetoggle:hover{border-color:var(--ink)}
+.platetoggle .chev{
+  width:8px;height:8px;border-right:1.6px solid var(--ink);border-bottom:1.6px solid var(--ink);
+  transform:rotate(-135deg);margin-top:3px;transition:transform .18s ease;
+}
+.plate.collapsed .platetoggle .chev{transform:rotate(45deg);margin-top:-3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.platebrief{
+  display:none;margin:0;padding-right:26px;
+  font-variation-settings:"wdth" 104,"wght" 700;font-size:15px;line-height:1.3;
+}
+.plate.collapsed .platebrief{display:block}
+.plate.collapsed #platebody{display:none}
+.plate.collapsed{padding:12px 16px}
+
 .plate .program{
   font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--ink-60);margin:0;
@@ -338,7 +359,16 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
       <p class="hint">Drag to orbit · scroll to zoom</p>
     </div>
 
-    <article class="plate">
+    <article class="plate" id="plate">
+      <button class="platetoggle" id="platetoggle" type="button"
+              aria-expanded="true" aria-controls="platebody" title="Hide details">
+        <span class="chev" aria-hidden="true"></span>
+        <span class="sr">Hide details</span>
+      </button>
+
+      <p class="platebrief" id="platebrief"></p>
+
+      <div id="platebody">
       <div class="crest" id="crest"></div>
       <p class="teamname" id="teamname"></p>
       <p class="robotsize" id="robotsize"></p>
@@ -352,6 +382,7 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
         <span class="year" id="year"></span>
       </h1>
       <p class="team" id="team"></p>
+      </div>
     </article>
   </div>
 
@@ -830,6 +861,9 @@ function renderCrest(s){
   el("teamname").textContent = s.teamName || teamLabel || "";
   /* VEX U size class, on its own line beneath the team name. */
   el("robotsize").textContent = SLOT_LABELS[s.slot] ? `${SLOT_LABELS[s.slot]} in` : "";
+  el("platebrief").textContent =
+    [s.team, s.game, s.year, SLOT_LABELS[s.slot] ? `${SLOT_LABELS[s.slot]} in` : null]
+      .filter(Boolean).join("  \u00b7  ");
 }
 function monogram(s){
   const d = document.createElement("div");
@@ -1002,6 +1036,19 @@ function render(gi, ri = 0){
 }
 
 el("whichrobot").addEventListener("change", e => render(groupAt, Number(e.target.value)));
+
+/* Collapsing the plate gives the model back the top-left of the frame. The
+   choice sticks while you move between a team's seasons. */
+let plateCollapsed = false;
+function setCollapsed(v){
+  plateCollapsed = v;
+  el("plate").classList.toggle("collapsed", v);
+  const b = el("platetoggle");
+  b.setAttribute("aria-expanded", String(!v));
+  b.title = v ? "Show details" : "Hide details";
+  b.querySelector(".sr").textContent = b.title;
+}
+el("platetoggle").addEventListener("click", () => setCollapsed(!plateCollapsed));
 
 const BOLT = `<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true">
   <path d="M12 2 21 7v10l-9 5-9-5V7z" fill="#C9CFCD"/>
