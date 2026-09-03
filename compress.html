@@ -140,6 +140,11 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
     losing anything you can actually see. It takes about a minute.<br><br>
     <b>Your file stays on your computer.</b> Nothing is uploaded, here or anywhere else.</p>
 
+  <p class="lede" style="font-size:14px">Expect roughly <b>10&times; to 30&times; smaller</b>.
+    If you need the very smallest file, the desktop script in the archive's tools
+    squeezes about three times harder — but this is easier, and the result loads
+    fine either way.</p>
+
   <div class="drop" id="drop">
     <h2>Drop a .glb here</h2>
     <p>or</p>
@@ -199,17 +204,15 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
 <script type="module">
 import { WebIO } from "https://cdn.jsdelivr.net/npm/@gltf-transform/core@4.4.2/+esm";
 import { ALL_EXTENSIONS } from "https://cdn.jsdelivr.net/npm/@gltf-transform/extensions@4.4.2/+esm";
-import { weld, simplify, normals, dedup, prune, meshopt, draco }
+import { weld, simplify, normals, dedup, prune, meshopt }
   from "https://cdn.jsdelivr.net/npm/@gltf-transform/functions@4.4.2/+esm";
 import { MeshoptSimplifier, MeshoptEncoder, MeshoptDecoder }
   from "https://cdn.jsdelivr.net/npm/meshoptimizer@0.22.0/+esm";
-import draco3d from "https://cdn.jsdelivr.net/npm/draco3dgltf@1.5.7/+esm";
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder as ThreeMeshopt } from "three/addons/libs/meshopt_decoder.module.js";
-import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 
 const $ = id => document.getElementById(id);
 const MB = 1048576;
@@ -354,21 +357,14 @@ $("go").addEventListener("click", async () => {
     log("Step 4 of 4 \u2014 restoring the shading\u2026");
     await frame();
 
-    /* Draco compresses this kind of geometry far harder than meshopt
-       (2.7 MB vs 9.1 MB on a test drivebase). Meshopt is the fallback if the
-       Draco encoder can't load. Both are decoded by the archive viewer. */
-    let usedDraco = false;
-    try {
-      const enc = await draco3d.createEncoderModule({});
-      io.registerDependencies({ "draco3d.encoder": enc });
-      await doc.transform(draco());
-      usedDraco = true;
-      log("Squeezing the file down\u2026");
-    } catch (e) {
-      log("Using the backup compressor \u2014 your file will work fine, just a little larger.");
-      await MeshoptEncoder.ready;
-      await doc.transform(meshopt({ encoder: MeshoptEncoder }));
-    }
+    /* Meshopt, not Draco. Draco compresses this kind of geometry about three
+       times harder, but its encoder ships as a Node-only package with no
+       browser build, so it can't run here. The desktop script
+       (compress-cad.mjs) uses Draco and produces smaller files; this is the
+       trade for not having to install anything. The archive decodes both. */
+    await MeshoptEncoder.ready;
+    await doc.transform(meshopt({ encoder: MeshoptEncoder }));
+    log("Squeezing the file down\u2026");
     await frame();
 
     const bytes = await io.writeBinary(doc);
@@ -432,11 +428,7 @@ function initView(){
 function preview(blob){
   if (!renderer) initView();
   const url = URL.createObjectURL(blob);
-  const dracoLoader = new DRACOLoader().setDecoderPath(
-    "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/");
-  const loader = new GLTFLoader()
-    .setMeshoptDecoder(ThreeMeshopt)
-    .setDRACOLoader(dracoLoader);
+  const loader = new GLTFLoader().setMeshoptDecoder(ThreeMeshopt);
   loader.load(url, gltf => {
     if (current) scene.remove(current);
     current = gltf.scene;
