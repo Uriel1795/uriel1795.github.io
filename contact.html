@@ -48,6 +48,10 @@ a{color:var(--blue)}
   margin:28px 0 0;padding:24px;background:#fff;border:1px solid var(--rule);
   display:flex;align-items:center;gap:20px;flex-wrap:wrap;
 }
+.mailbox .who{
+  margin:0 0 4px;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-60);
+}
 .mailbox .addr{
   font-family:"IBM Plex Mono",monospace;font-size:17px;font-weight:600;
   word-break:break-all;
@@ -86,12 +90,26 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap}
   </header>
 
   <h1>Get in touch</h1>
-  <p class="sub">One address, and it reaches a person rather than a queue.</p>
+  <p class="sub">These reach a person rather than a queue.</p>
 
   <div class="mailbox">
-    <div class="addr" id="addr">archive@robotarchive.net</div>
-    <a class="btn" href="mailto:archive@robotarchive.net">Send an email</a>
+    <div>
+      <p class="who">VEX IQ</p>
+      <div class="addr">vexiqarchive@robotarchive.net</div>
+    </div>
+    <a class="btn" href="mailto:vexiqarchive@robotarchive.net">Email</a>
   </div>
+
+  <div class="mailbox" style="margin-top:14px">
+    <div>
+      <p class="who">VEX V5 and VEX U</p>
+      <div class="addr">vexv5archive@robotarchive.net</div>
+    </div>
+    <a class="btn" href="mailto:vexv5archive@robotarchive.net">Email</a>
+  </div>
+
+  <p class="sub" style="font-size:14px;margin-top:14px">Not sure which? Either address
+    reaches me — pick whichever is closer.</p>
 
   <div class="notice">
     <b>Please have an adult send it.</b> A parent, teacher or coach. This site is built
