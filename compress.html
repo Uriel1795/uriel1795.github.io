@@ -59,6 +59,7 @@ body{
   padding:44px 24px;text-align:center;transition:border-color .15s, background .15s;
 }
 .drop.over{border-color:var(--blue);background:#F2F8FE}
+.drop[hidden]{display:none}
 .drop h2{
   margin:0 0 6px;font-variation-settings:"wdth" 104,"wght" 700;font-size:19px;
 }
@@ -149,7 +150,6 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
     <h2>Drop a .glb here</h2>
     <p>or</p>
     <button type="button" id="pick">Choose a file…</button>
-    <p style="margin-top:14px">The file you exported from Blender, or from a scanning app.</p>
   </div>
 
   <section class="panel" id="info" hidden>
@@ -183,9 +183,11 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
     </div>
     <p class="lede" style="font-size:14px">Have a look before you download — drag to spin it
       around. The colours should match your CAD, and the parts you care about should still be
-      recognisable. If something looks mushy, slide the detail up and try again.</p>
+      recognisable.</p>
     <div class="actions">
       <button type="button" id="download">Download this version</button>
+      <button type="button" class="ghost" id="redo">Looks mushy — try more detail</button>
+      <button type="button" class="ghost" id="reset2">Use a different file</button>
     </div>
   </section>
 
@@ -380,9 +382,16 @@ $("go").addEventListener("click", async () => {
       ["Now", factor + "× smaller"],
       ["Colours", attrs(doc).includes("COLOR_0") ? "kept" : "none in file"],
     ]);
+    /* Hide the input panel and the drop zone so the preview lands at the top
+       of the page rather than below things they've finished with. */
+    $("drop").hidden = true;
+    $("info").hidden = true;
     $("out").hidden = false;
+    scrollTo({ top: 0, behavior: "smooth" });
     preview(outBlob);
   } catch (err){
+    $("info").hidden = false;          // stay put so they can adjust and retry
+    $("drop").hidden = false;
     log("That didn't work.", "bad");
     log("Most often this means the file was too big for the browser to hold. Try");
     log("moving the slider left, or re-export from CAD with lower mesh refinement.");
@@ -391,6 +400,18 @@ $("go").addEventListener("click", async () => {
     $("go").disabled = false;
   }
 });
+
+$("redo").addEventListener("click", () => {
+  $("out").hidden = true;
+  $("info").hidden = false;
+  $("drop").hidden = false;
+  const r = $("ratio");
+  r.value = Math.min(100, Number(r.value) + 15);      // start them somewhere better
+  $("ratioval").textContent = r.value + "%";
+  scrollTo({ top: 0, behavior: "smooth" });
+  $("go").focus();
+});
+$("reset2").addEventListener("click", () => location.reload());
 
 $("download").addEventListener("click", () => {
   if (!outBlob) return;
