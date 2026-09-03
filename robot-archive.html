@@ -820,7 +820,10 @@ function renderCrest(s){
   } else {
     crest.replaceChildren(monogram(s));
   }
-  el("teamname").textContent = s.teamName || teamLabel || "";
+  /* Same line as the roster cards: team name, then the VEX U size class. */
+  el("teamname").textContent =
+    [s.teamName || teamLabel || null, SLOT_LABELS[s.slot] ? `${SLOT_LABELS[s.slot]} in` : null]
+      .filter(Boolean).join(" \u00b7 ");
 }
 function monogram(s){
   const d = document.createElement("div");
