@@ -547,6 +547,52 @@ loader.setDRACOLoader(draco);
 loader.setMeshoptDecoder(MeshoptDecoder);
 let current = null, token = 0;
 
+function countTriangles(obj){
+  let tris = 0, meshes = 0;
+  obj.traverse(n => {
+    if (!n.isMesh || !n.geometry) return;
+    meshes++;
+    const g = n.geometry;
+    tris += (g.index ? g.index.count : g.attributes.position?.count ?? 0) / 3;
+  });
+  return { tris: Math.round(tris), meshes };
+}
+
+/**
+ * Heavy models are usually slow because of the shadow pass, not the model —
+ * shadows re-render every triangle from the light's point of view, so a
+ * million-triangle robot becomes two million per frame. Above a threshold,
+ * drop shadows and the pixel ratio rather than dropping the model.
+ */
+const HEAVY = 250_000;
+
+function tuneQuality(obj){
+  const { tris, meshes } = countTriangles(obj);
+  const heavy = tris > HEAVY;
+
+  renderer.shadowMap.enabled = !heavy;
+  key.castShadow = !heavy;
+  floor.receiveShadow = !heavy;
+  renderer.setPixelRatio(heavy ? 1 : Math.min(devicePixelRatio, 2));
+
+  obj.traverse(n => {
+    if (!n.isMesh) return;
+    n.castShadow = n.receiveShadow = !heavy;
+    n.frustumCulled = true;
+  });
+
+  if (heavy){
+    console.info(
+      `Heavy model: ${tris.toLocaleString()} triangles in ${meshes} meshes. ` +
+      `Shadows off to keep it interactive. Re-compress to under ` +
+      `${HEAVY.toLocaleString()} triangles for a smoother result.`
+    );
+  }
+  return { tris, meshes, heavy };
+}
+
+let heavyLoaded = false;
+
 function place(obj){
   const box = new THREE.Box3().setFromObject(obj);
   const size = box.getSize(new THREE.Vector3());
@@ -555,7 +601,7 @@ function place(obj){
   const b2 = new THREE.Box3().setFromObject(obj);
   const c = b2.getCenter(new THREE.Vector3());
   obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= b2.min.y;
-  obj.traverse(n => { if (n.isMesh) n.castShadow = n.receiveShadow = true; });
+  heavyLoaded = tuneQuality(obj).heavy;
 }
 
 /* Fit the camera to the model rather than sitting at a fixed distance.
@@ -586,10 +632,13 @@ function show(entry, index){
 
   const done = obj => {
     if (mine !== token) return;
-    place(obj);
+    const q = place(obj) || {};
     obj.rotation.y = -0.5;
     scene.add(obj);
     frame(obj);
+    /* Auto-rotation forces a redraw every frame. On a heavy model that's the
+       difference between "slow" and "still". Let the visitor spin it instead. */
+    controls.autoRotate = !reduced && !heavyLoaded;
     current = obj;
     statusEl.hidden = true;
     controls.autoRotate = !reduced;
@@ -821,10 +870,19 @@ function resize(){
 addEventListener("resize", resize);
 resize();
 
+/* Render only when something changed. A static model at rest costs nothing,
+   which matters far more on a heavy scene than on a light one. */
+let needsRender = true;
+controls.addEventListener("change", () => { needsRender = true; });
+addEventListener("resize", () => { needsRender = true; });
+
 (function loop(){
   requestAnimationFrame(loop);
-  controls.update();
-  renderer.render(scene, camera);
+  const moving = controls.update();      // true while damping or auto-rotating
+  if (moving || needsRender){
+    renderer.render(scene, camera);
+    needsRender = false;
+  }
 })();
 
 /* Open ?year= if given, else this team's most recent robot. */

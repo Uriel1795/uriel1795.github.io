@@ -165,13 +165,14 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
     <h2 class="eyebrow">What you gave me</h2>
     <dl class="stats" id="instats"></dl>
 
-    <label class="ctl" for="ratio">How much detail to keep — 25% is usually plenty</label>
-    <input type="range" id="ratio" min="10" max="100" step="5" value="25">
+    <label class="ctl" for="ratio">How detailed should the result be?</label>
+    <input type="range" id="ratio" min="0" max="3" step="1" value="1">
     <div class="ratioline">
-      <span>smaller, loads faster</span>
-      <span>keeping <b id="ratioval">25%</b> of triangles</span>
-      <span>sharper, bigger file</span>
+      <span>loads fastest</span>
+      <span id="ratioval"></span>
+      <span>most detail</span>
     </div>
+    <p class="hint" id="targethint" style="margin-top:8px;font-size:13px;color:var(--ink-60)"></p>
 
     <div class="actions">
       <button type="button" id="go">Shrink it</button>
@@ -194,7 +195,7 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
       recognisable.</p>
     <div class="actions">
       <button type="button" id="download">Download this version</button>
-      <button type="button" class="ghost" id="redo">Looks mushy — try more detail</button>
+      <button type="button" class="ghost" id="redo">Looks mushy — more detail</button>
       <button type="button" class="ghost" id="reset2">Use a different file</button>
     </div>
   </section>
@@ -307,6 +308,7 @@ async function accept(f){
       ["Detail", fmt(t) + " triangles", t > 1_500_000],
       ["Colours", a.includes("COLOR_0") ? "found" : "none found"],
     ]);
+    showTarget();
     log("Looks good \u2014 ready when you are.", "ok");
   } catch (err){
     log("Couldn't open that one. It may be damaged, or saved in a different format.", "bad");
@@ -322,15 +324,40 @@ const attrs = d => [...new Set(d.getRoot().listMeshes()
 
 const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-/* ---------------- ratio control ---------------- */
-$("ratio").addEventListener("input", e => {
-  $("ratioval").textContent = e.target.value + "%";
-});
+/* ---------------- detail control ---------------- */
+/* Absolute targets, not percentages. A percentage can't protect you from a
+   heavy input — 25% of 40 million triangles is still 10 million, which no
+   browser will spin smoothly. */
+const TARGETS = [
+  { label: "Light",    tris: 150_000, note: "best on old laptops and phones" },
+  { label: "Balanced", tris: 300_000, note: "recommended \u2014 smooth almost everywhere" },
+  { label: "Detailed", tris: 600_000, note: "for robots with fine mechanisms" },
+  { label: "Maximum",  tris: 1_000_000, note: "may stutter on older machines" },
+];
+
+function currentTarget(){ return TARGETS[Number($("ratio").value)] ?? TARGETS[1]; }
+
+function showTarget(){
+  const t = currentTarget();
+  $("ratioval").innerHTML = `<b>${t.label}</b>`;
+  const have = doc ? tris(doc) : 0;
+  $("targethint").textContent = have
+    ? `About ${t.tris.toLocaleString()} triangles \u2014 ${t.note}. `
+      + (have <= t.tris
+          ? "Your model is already under this, so detail is kept as it is."
+          : `Down from ${have.toLocaleString()}.`)
+    : `About ${t.tris.toLocaleString()} triangles \u2014 ${t.note}.`;
+}
+$("ratio").addEventListener("input", showTarget);
 
 /* ---------------- the pipeline ---------------- */
 $("go").addEventListener("click", async () => {
   if (!doc) return;
-  const ratio = Number($("ratio").value) / 100;
+  const target = currentTarget();
+  const before0 = tris(doc);
+  /* Convert the target into the ratio the simplifier wants. Never above 1 —
+     a model already under target is left alone rather than subdivided. */
+  const ratio = Math.min(1, target.tris / Math.max(before0, 1));
   $("go").disabled = true;
   $("out").hidden = true;
   $("log").innerHTML = "";
@@ -357,7 +384,7 @@ $("go").addEventListener("click", async () => {
       simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.002 }),
       dedup(), prune(),
     );
-    log(`Step 3 of 4 \u2014 down to ${fmt(tris(doc))} triangles.`);
+    log(`Step 3 of 4 \u2014 down to ${fmt(tris(doc))} triangles (aimed for ${fmt(target.tris)}).`);
     await frame();
 
     /* Essential — without normals nothing lights the surface and the whole
@@ -394,6 +421,9 @@ $("go").addEventListener("click", async () => {
     $("drop").hidden = true;
     $("privacy").hidden = true;
     $("info").hidden = true;
+    if (tris(doc) > 400_000)
+      log("Still fairly heavy \u2014 if it feels sluggish on the site, redo it at a "
+        + "lighter setting.", "bad");
     $("out").hidden = false;
     scrollTo({ top: 0, behavior: "smooth" });
     preview(outBlob);
@@ -416,8 +446,8 @@ $("redo").addEventListener("click", () => {
   $("drop").hidden = false;
   $("privacy").hidden = false;
   const r = $("ratio");
-  r.value = Math.min(100, Number(r.value) + 15);      // start them somewhere better
-  $("ratioval").textContent = r.value + "%";
+  r.value = Math.min(TARGETS.length - 1, Number(r.value) + 1);   // one step more detail
+  showTarget();
   scrollTo({ top: 0, behavior: "smooth" });
   $("go").focus();
 });
@@ -487,6 +517,8 @@ function resize(){
   camera.updateProjectionMatrix();
 }
 addEventListener("resize", resize);
+
+showTarget();          // fill in the hint before any file is chosen
 </script>
 </body>
 </html>
