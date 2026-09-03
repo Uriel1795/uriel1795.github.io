@@ -335,6 +335,15 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
     padding:18px 0 0;background:none;
   }
   .plate .team{font-size:12.5px}
+
+  /* Nothing is covering the model here — the plate sits below the canvas —
+     so there is nothing to collapse. Hide the control and force it open, in
+     case it was collapsed on a wider screen before the window was resized. */
+  .platetoggle{display:none}
+  .plate.collapsed #platebody{display:block}
+  .plate.collapsed .platebrief{display:none}
+  .plate.collapsed{padding:18px 0 0}
+
   .specs{grid-template-columns:repeat(2,1fr)}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
