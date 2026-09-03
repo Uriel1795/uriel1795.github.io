@@ -169,7 +169,7 @@ footer{
     who built it. <span class="wide-only">Pick a team to see its robot in 3D.</span></p>
 
   <div class="searchbar">
-    <input type="search" id="q" placeholder="Search team number, name, student, or season…"
+    <input type="search" id="q" placeholder="Search team number, team name, or season…"
            autocomplete="off" spellcheck="false">
     <span class="hits" id="hits"></span>
   </div>
@@ -194,10 +194,15 @@ const $ = id => document.getElementById(id);
 const yearKey = s => (s.year || "").slice(0,4);
 let LOGOS = new Map();
 
+/* VEX U size classes. Stored as large/small so the limits can change between
+   seasons without touching the data; only these labels would need updating. */
+const SLOT_LABELS = { large: "24 \u00d7 24 \u00d7 24 in", small: "15 \u00d7 15 \u00d7 15 in" };
+
 function card(s, history){
   const art = document.createElement("article");
   art.className = "card";
-  const href = `robot-archive.html?team=${encodeURIComponent(s.team)}&year=${yearKey(s)}`;
+  const href = `robot-archive.html?team=${encodeURIComponent(s.team)}&year=${yearKey(s)}`
+    + (s.slot ? `&robot=${s.slot}` : "");
 
   /* every year this team appears, so a card can point at the rest */
   const others = history.filter(y => y !== s.year);
@@ -234,10 +239,11 @@ function card(s, history){
   }
   art.append(team);
 
-  if (s.teamName){
+  if (s.teamName || s.slot){
     const tn = document.createElement("p");
     tn.className = "tname";
-    tn.textContent = s.teamName;
+    tn.textContent = [s.teamName, SLOT_LABELS[s.slot] ?? null]
+                     .filter(Boolean).join(" · ");
     art.append(tn);
   }
 

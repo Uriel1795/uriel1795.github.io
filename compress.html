@@ -64,6 +64,10 @@ body{
   margin:12px 0 0;text-align:center;font-size:13.5px;line-height:1.6;color:var(--ink-60);
 }
 .privacy b{color:var(--ink);font-variation-settings:"wdth" 100,"wght" 700}
+.privacy .fineprint{
+  display:inline-block;margin-top:6px;font-family:"IBM Plex Mono",monospace;
+  font-size:11.5px;letter-spacing:.01em;
+}
 .privacy[hidden]{display:none}
 .drop h2{
   margin:0 0 6px;font-variation-settings:"wdth" 104,"wght" 700;font-size:19px;
@@ -157,7 +161,9 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
   </div>
 
   <p class="privacy" id="privacy">
-    <b>Your file stays on your computer.</b> It is not uploaded — here or anywhere else.
+    <b>Your file stays on your computer.</b> It is not uploaded — here or anywhere else.<br>
+    <span class="fineprint">Works in any modern browser. Very large files may need a
+      desktop rather than a laptop.</span>
   </p>
 
   <section class="panel" id="info" hidden>
@@ -207,7 +213,6 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
       <a href="compress.html">Compress a model</a>
       <a href="contact.html">Contact</a>
     </div>
-    Works in any modern browser. Very large files may need a desktop rather than a laptop.
   </footer>
 </div>
 
@@ -302,12 +307,28 @@ async function accept(f){
     log("Opening your file\u2026");
     await frame();
     doc = await io.readBinary(new Uint8Array(await f.arrayBuffer()));
-    const t = tris(doc), a = attrs(doc);
+    const t = tris(doc), a = attrs(doc), dc = drawCalls(doc);
     stat($("instats"), [
       ["Size", mb(f.size), f.size > 500*MB],
       ["Detail", fmt(t) + " triangles", t > 1_500_000],
+      ["Separate parts", fmt(dc), dc > DRAW_BUDGET],
       ["Colours", a.includes("COLOR_0") ? "found" : "none found"],
     ]);
+
+    if (dc > DRAW_BUDGET){
+      const warn = $("sizewarn");
+      warn.hidden = false;
+      warn.innerHTML = `<b>This model is built from ${fmt(dc)} separate pieces.</b>
+        That's what will make it slow \u2014 not the file size, and shrinking it here
+        won't help. Graphics cards cope with a few thousand pieces, not hundreds
+        of thousands.<br><br>
+        <b>The fix takes about ten seconds in Blender:</b> select everything
+        (<code>A</code>) and join it into one object (<code>Ctrl&nbsp;+&nbsp;J</code>),
+        then export again. Hiding screws and nuts before exporting helps too.
+        Come back here afterwards.`;
+      log(`Warning: ${fmt(dc)} separate pieces \u2014 join them in Blender first.`, "bad");
+    }
+
     showTarget();
     log("Looks good \u2014 ready when you are.", "ok");
   } catch (err){
@@ -319,6 +340,22 @@ async function accept(f){
 const tris = d => Math.round(d.getRoot().listMeshes()
   .flatMap(m => m.listPrimitives())
   .reduce((n,p) => n + (p.getIndices()?.getCount() ?? p.getAttribute("POSITION").getCount())/3, 0));
+
+/**
+ * Draw calls: one per primitive, per node that points at the mesh. This is
+ * usually what makes a CAD export unusable — a graphics card handles a couple
+ * of thousand per frame, and an unmerged assembly can be hundreds of thousands.
+ * No amount of triangle reduction fixes it.
+ */
+const drawCalls = d => {
+  let n = 0;
+  for (const node of d.getRoot().listNodes()) {
+    const mesh = node.getMesh();
+    if (mesh) n += mesh.listPrimitives().length;
+  }
+  return n;
+};
+const DRAW_BUDGET = 3000;
 const attrs = d => [...new Set(d.getRoot().listMeshes()
   .flatMap(m => m.listPrimitives()).flatMap(p => p.listSemantics()))];
 
@@ -354,10 +391,7 @@ $("ratio").addEventListener("input", showTarget);
 $("go").addEventListener("click", async () => {
   if (!doc) return;
   const target = currentTarget();
-  const before0 = tris(doc);
-  /* Convert the target into the ratio the simplifier wants. Never above 1 —
-     a model already under target is left alone rather than subdivided. */
-  const ratio = Math.min(1, target.tris / Math.max(before0, 1));
+  /* A model already under target is left alone rather than chewed. */
   $("go").disabled = true;
   $("out").hidden = true;
   $("log").innerHTML = "";
@@ -379,12 +413,22 @@ $("go").addEventListener("click", async () => {
     log("Step 2 of 4 \u2014 joining up shared corners\u2026");
     await frame();
 
+    /* The simplifier's error bound is relative to each part's own size, so on
+       an assembly of many small components a tight bound means nothing can
+       collapse at all — a 300-part model comes back unchanged. Start tight to
+       preserve shape, loosen only as far as needed to reach the target. */
     await MeshoptSimplifier.ready;
-    await doc.transform(
-      simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.002 }),
-      dedup(), prune(),
-    );
-    log(`Step 3 of 4 \u2014 down to ${fmt(tris(doc))} triangles (aimed for ${fmt(target.tris)}).`);
+    for (const error of [0.001, 0.01, 0.05, 0.2, 0.5, 1]) {
+      const have = tris(doc);
+      if (have <= target.tris * 1.05) break;
+      await doc.transform(
+        simplify({ simplifier: MeshoptSimplifier, ratio: target.tris / have, error }),
+        dedup(), prune(),
+      );
+      log(`Step 3 of 4 \u2014 ${fmt(have)} \u2192 ${fmt(tris(doc))} triangles\u2026`);
+      await frame();
+    }
+    log(`Step 3 of 4 \u2014 ${fmt(tris(doc))} triangles (aimed for ${fmt(target.tris)}).`);
     await frame();
 
     /* Essential — without normals nothing lights the surface and the whole
@@ -413,6 +457,7 @@ $("go").addEventListener("click", async () => {
     stat($("outstats"), [
       ["Size", mb(outBlob.size)],
       ["Detail", fmt(tris(doc)) + " triangles"],
+      ["Separate parts", fmt(drawCalls(doc)), drawCalls(doc) > DRAW_BUDGET],
       ["Now", factor + "× smaller"],
       ["Colours", attrs(doc).includes("COLOR_0") ? "kept" : "none in file"],
     ]);

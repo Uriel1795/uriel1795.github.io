@@ -159,6 +159,19 @@ body{
 }
 .teamname:empty{display:none}
 
+.robotpick{margin:0 0 12px}
+.robotpick[hidden]{display:none}
+.robotpick label{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60);margin-bottom:4px;
+}
+.robotpick select{
+  font:inherit;font-size:14px;padding:6px 9px;background:#fff;
+  border:1px solid var(--rule);border-radius:0;color:var(--ink);width:100%;
+  font-variation-settings:"wdth" 96,"wght" 600;
+}
+.robotpick select:focus{outline:2px solid var(--blue);outline-offset:-1px}
+
 
 /* --- standalone section variant (mobile) --- */
 .crew-section{margin-top:38px;padding-top:22px;border-top:1.5px solid var(--ink)}
@@ -322,6 +335,10 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
     <article class="plate">
       <div class="crest" id="crest"></div>
       <p class="teamname" id="teamname"></p>
+      <div class="robotpick" id="robotpick" hidden>
+        <label for="whichrobot">Robot size</label>
+        <select id="whichrobot"></select>
+      </div>
       <p class="program" id="program"></p>
       <h1 class="title">
         <span class="game" id="game"></span>
@@ -391,6 +408,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 window.__ARCHIVE_OK__ = true;
 const el = id => document.getElementById(id);
@@ -424,7 +442,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.95;
+renderer.toneMappingExposure = 1.04;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x151B1E);
@@ -445,18 +463,31 @@ controls.autoRotate = !reduced;
 controls.autoRotateSpeed = .55;
 canvas.addEventListener("pointerdown", () => controls.autoRotate = false);
 
-scene.add(new THREE.HemisphereLight(0xdfe6e8, 0x2a3134, 0.65));
+const hemi = new THREE.HemisphereLight(0xdfe6e8, 0x2a3134, 0.65);
+scene.add(hemi);
 const key = new THREE.DirectionalLight(0xffffff, 1.35);
 key.position.set(4, 8, 4);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
 key.shadow.camera.left = key.shadow.camera.bottom = -6;
 key.shadow.camera.right = key.shadow.camera.top = 6;
-key.shadow.bias = -0.0006;
+/* A negative bias makes the shadow pull away from the model ("peter-panning"),
+   which looks exactly like the robot hovering. normalBias fixes the acne this
+   was guarding against without detaching anything. */
+key.shadow.bias = -0.0001;
+key.shadow.normalBias = 0.02;
 scene.add(key);
 const rim = new THREE.DirectionalLight(0x8fb4d6, .55);
 rim.position.set(-5, 3, -4);
 scene.add(rim);
+
+/* CAD exports use metallic materials, and metal in three.js renders whatever
+   its surroundings reflect. With only lights and no environment there is
+   nothing to reflect, so a metal robot comes out almost black. This gives it
+   something — a neutral room — which is what makes metal read as metal. */
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+pmrem.dispose();
 
 function tileTexture(){
   const c = document.createElement("canvas");
@@ -474,6 +505,35 @@ function tileTexture(){
   t.repeat.set(2,2);
   return t;
 }
+/* A soft dark patch under the model. Real shadow mapping gets switched off on
+   heavy models to keep them interactive, and without any contact cue a robot
+   reads as floating even when it's sitting on the floor. */
+function contactTexture(){
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const x = c.getContext("2d");
+  const g = x.createRadialGradient(128, 128, 8, 128, 128, 124);
+  g.addColorStop(0,   "rgba(0,0,0,0.55)");
+  g.addColorStop(0.45,"rgba(0,0,0,0.28)");
+  g.addColorStop(1,   "rgba(0,0,0,0)");
+  x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const contact = new THREE.Mesh(
+  new THREE.PlaneGeometry(1, 1),
+  new THREE.MeshBasicMaterial({
+    map: contactTexture(), transparent: true, depthWrite: false,
+    opacity: 0.9, toneMapped: false,
+  })
+);
+contact.rotation.x = -Math.PI/2;
+contact.position.y = 0.004;          // just above the tiles, to avoid z-fighting
+contact.renderOrder = 1;
+contact.visible = false;
+scene.add(contact);
+
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(16,16),
   new THREE.MeshStandardMaterial({map:tileTexture(), roughness:.94, metalness:0})
@@ -566,6 +626,37 @@ function countTriangles(obj){
  */
 const HEAVY = 250_000;
 
+/**
+ * CAD exports vary wildly in brightness — cream IQ plastic and near-black
+ * anodised V5 need very different exposure. Measure the materials and adjust,
+ * rather than tuning the lights for one robot and under-lighting the next.
+ */
+function lightFor(obj){
+  const seen = new Set();
+  let sum = 0, n = 0;
+  obj.traverse(node => {
+    for (const m of [].concat(node.material ?? [])) {
+      if (!m || seen.has(m.uuid) || !m.color) continue;
+      seen.add(m.uuid);
+      const c = m.color;
+      sum += 0.2126*c.r + 0.7152*c.g + 0.0722*c.b;   // perceived brightness
+      n++;
+    }
+  });
+  if (!n) return;
+
+  const mean = sum / n;
+  /* 0.45 is roughly mid-grey. Darker models get more light, brighter ones
+     less, clamped so nothing washes out or goes black. */
+  const boost = THREE.MathUtils.clamp(0.45 / Math.max(mean, 0.04), 0.7, 3.2);
+
+  renderer.toneMappingExposure = THREE.MathUtils.clamp(0.855 * boost, 0.72, 2.16);
+  key.intensity = 1.35 * boost;
+  rim.intensity = 0.55 * boost;
+  hemi.intensity = 0.65 * boost;
+  needsRender = true;
+}
+
 function tuneQuality(obj){
   const { tris, meshes } = countTriangles(obj);
   const heavy = tris > HEAVY;
@@ -593,21 +684,41 @@ function tuneQuality(obj){
 
 let heavyLoaded = false;
 
+/**
+ * Bounds of the geometry only. Box3.setFromObject also counts cameras, lights
+ * and empties, which exporters leave behind — one stray empty below the robot
+ * and the whole model floats above the floor.
+ */
+function meshBounds(obj){
+  const box = new THREE.Box3();
+  let found = false;
+  obj.updateMatrixWorld(true);
+  obj.traverse(n => {
+    if (!n.isMesh || !n.geometry) return;
+    n.geometry.computeBoundingBox();
+    box.union(n.geometry.boundingBox.clone().applyMatrix4(n.matrixWorld));
+    found = true;
+  });
+  return found ? box : new THREE.Box3().setFromObject(obj);
+}
+
 function place(obj){
-  const box = new THREE.Box3().setFromObject(obj);
+  const box = meshBounds(obj);
   const size = box.getSize(new THREE.Vector3());
   const k = 2.2 / Math.max(size.x, size.y, size.z);
   if (isFinite(k) && k > 0) obj.scale.setScalar(k);
-  const b2 = new THREE.Box3().setFromObject(obj);
+
+  const b2 = meshBounds(obj);
   const c = b2.getCenter(new THREE.Vector3());
   obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= b2.min.y;
   heavyLoaded = tuneQuality(obj).heavy;
+  lightFor(obj);
 }
 
 /* Fit the camera to the model rather than sitting at a fixed distance.
    A long flat drivebase and a tall tower need very different framing. */
 function frame(obj){
-  const box = new THREE.Box3().setFromObject(obj);
+  const box = meshBounds(obj);
   const size = box.getSize(new THREE.Vector3());
   const centre = box.getCenter(new THREE.Vector3());
   const radius = 0.5 * size.length();
@@ -632,8 +743,17 @@ function show(entry, index){
 
   const done = obj => {
     if (mine !== token) return;
-    const q = place(obj) || {};
-    obj.rotation.y = -0.5;
+    /* Rotate first, then measure. CAD is Z-up and glTF is Y-up, so exports
+       that skip the conversion arrive lying down; an entry can carry
+       rotation:[x,y,z] in degrees. Measuring before rotating would centre and
+       seat the model against the wrong orientation. */
+    const rot = Array.isArray(entry.rotation) ? entry.rotation : null;
+    obj.rotation.set(
+      THREE.MathUtils.degToRad(rot?.[0] || 0),
+      THREE.MathUtils.degToRad(rot?.[1] || 0) + (rot ? 0 : -0.5),
+      THREE.MathUtils.degToRad(rot?.[2] || 0),
+    );
+    place(obj);
     scene.add(obj);
     frame(obj);
     /* Auto-rotation forces a redraw every frame. On a heavy model that's the
@@ -717,9 +837,16 @@ const teamId = (params.get("team") || "").trim();
 if (!teamId){ location.replace("index.html"); throw new Error("no team"); }
 
 const yearKey = s => (s.year || "").slice(0,4);
+/* VEX U size classes. Stored as large/small so the limits can change between
+   seasons without a data migration; only these labels would need updating. */
+const SLOT_LABELS = { large: "24 \u00d7 24 \u00d7 24", small: "15 \u00d7 15 \u00d7 15" };
+const slotLabel = s => SLOT_LABELS[s?.slot] ?? "";
+
+/* VEX U teams field two robots in a season, so a year can hold more than one. */
 const ENTRIES = SEASONS
   .filter(s => (s.team || "").toLowerCase() === teamId.toLowerCase())
-  .sort((a,b) => yearKey(a).localeCompare(yearKey(b)));
+  .sort((a,b) => yearKey(a).localeCompare(yearKey(b))
+              || (a.slot || "").localeCompare(b.slot || ""));
 
 /* A team's logo or name may only have been filled in for one season —
    use whichever entry has one. Declared here, after ENTRIES exists;
@@ -732,6 +859,16 @@ if (!ENTRIES.length){
   statusEl.textContent = `No robots on file for team ${teamId}.`;
   el("count").textContent = "";
   throw new Error("unknown team");
+}
+
+/* One entry on the season rail per season, not per robot. A VEX U season
+   holds two robots and gets a size picker instead of a second bolt — two
+   bolts would make one season look like two, and lose the game name. */
+const GROUPS = [];
+for (const e of ENTRIES) {
+  const key = yearKey(e);
+  const g = GROUPS.find(x => x.key === key);
+  g ? g.robots.push(e) : GROUPS.push({ key, year: e.year, game: e.game, robots: [e] });
 }
 
 /* ---------------- notebook + mementos ---------------- */
@@ -807,10 +944,31 @@ addEventListener("keydown", e=>{
 });
 
 /* ---------------- page rendering ---------------- */
-function render(i){
-  const s = ENTRIES[i];
-  history.replaceState(null, "", `?team=${encodeURIComponent(s.team)}&year=${yearKey(s)}`);
-  document.title = `Team ${s.team} · ${s.game} ${s.year} — Robot Archive`;
+let groupAt = 0, robotAt = 0;
+
+function render(gi, ri = 0){
+  groupAt = gi; robotAt = ri;
+  const group = GROUPS[gi];
+  const s = group.robots[ri];
+
+  /* the size picker, only when a season really has more than one robot */
+  const pick = el("robotpick");
+  if (group.robots.length > 1){
+    el("whichrobot").replaceChildren(...group.robots.map((r, k) => {
+      const o = document.createElement("option");
+      o.value = k;
+      o.textContent = SLOT_LABELS[r.slot] ? `${SLOT_LABELS[r.slot]} in` : `Robot ${k + 1}`;
+      return o;
+    }));
+    el("whichrobot").value = String(ri);
+    pick.hidden = false;
+  } else {
+    pick.hidden = true;
+  }
+  history.replaceState(null, "", `?team=${encodeURIComponent(s.team)}&year=${yearKey(s)}`
+    + (s.slot ? `&robot=${s.slot}` : ""));
+  document.title = `Team ${s.team} · ${s.game} ${s.year}`
+    + (slotLabel(s) ? ` (${slotLabel(s)} in)` : "") + ` — Robot Archive`;
   renderCrest(s);
   const crew = s.students || [];
   el("crew-section").hidden = !crew.length;
@@ -830,9 +988,11 @@ function render(i){
   el("note").textContent = s.note || "";
   renderNotebook(s);
   renderMementos(s);
-  document.querySelectorAll(".bay").forEach((b,j)=>b.setAttribute("aria-current", j===i));
-  show(s, i);
+  document.querySelectorAll(".bay").forEach((b,j)=>b.setAttribute("aria-current", j===gi));
+  show(s, gi);
 }
+
+el("whichrobot").addEventListener("change", e => render(groupAt, Number(e.target.value)));
 
 const BOLT = `<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true">
   <path d="M12 2 21 7v10l-9 5-9-5V7z" fill="#C9CFCD"/>
@@ -840,13 +1000,14 @@ const BOLT = `<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true">
 
 const channel = el("channel");
 const rail = document.querySelector(".rail");
-if (ENTRIES.length < 2){
-  rail.hidden = true;                       // one robot — nothing to switch between
+if (GROUPS.length < 2){
+  rail.hidden = true;                       // one season — nothing to switch between
 } else {
-  ENTRIES.forEach((s,i)=>{
+  GROUPS.forEach((g,i)=>{
     const b = document.createElement("button");
     b.className = "bay"; b.type = "button"; b.setAttribute("role","tab");
-    b.innerHTML = `<div class="hole">${BOLT}</div><span class="lab">${s.year}</span><span class="gm">${s.game}</span>`;
+    b.innerHTML = `<div class="hole">${BOLT}</div><span class="lab">${g.year}</span>`
+      + `<span class="gm">${g.game}</span>`;
     b.addEventListener("click", ()=>render(i));
     channel.append(b);
   });
@@ -887,8 +1048,11 @@ addEventListener("resize", () => { needsRender = true; });
 
 /* Open ?year= if given, else this team's most recent robot. */
 const wantYear = params.get("year");
-const start = wantYear ? ENTRIES.findIndex(s => yearKey(s) === wantYear) : -1;
-render(start >= 0 ? start : ENTRIES.length - 1);
+const wantSlot = params.get("robot");
+const gi = wantYear ? GROUPS.findIndex(g => g.key === wantYear) : -1;
+const g0 = gi >= 0 ? gi : GROUPS.length - 1;
+const ri = wantSlot ? Math.max(0, GROUPS[g0].robots.findIndex(r => r.slot === wantSlot)) : 0;
+render(g0, ri);
 </script>
 
 <script>

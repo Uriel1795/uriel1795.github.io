@@ -159,9 +159,6 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
   border-top:1.5px solid var(--ink);margin-top:8px}
 .toast{font-family:"IBM Plex Mono",monospace;font-size:12.5px;margin-left:auto}
 .toast.ok{color:#1B7F3B}.toast.err{color:var(--red)}
-details.preview{margin-top:20px}
-details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
-  font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.5;max-height:340px}
 </style>
 </head>
 <body>
@@ -183,7 +180,6 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
            style="flex:1 1 220px;max-width:280px;padding:8px 10px;border:1px solid var(--rule);font:inherit;font-size:14px">
     <button id="signin">Sign in</button>
     <button class="ghost" id="signout" hidden>Sign out</button>
-    <p class="ledge"> Not for public access yet</p>
   </div>
 
   <div class="cols">
@@ -238,6 +234,7 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
                 <option value="">— pick one —</option>
                 <option>VEX IQ</option>
                 <option>VEX V5</option>
+                <option>VEX U</option>
               </select>
             </div>
             <div class="field">
@@ -247,6 +244,18 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
             </div>
           </div>
           <p class="hint" id="seasonhint"></p>
+
+          <div class="field" id="slotfield" hidden style="margin-top:14px">
+            <label for="f-slot">Which robot? *</label>
+            <select id="f-slot">
+              <option value="">— pick one —</option>
+              <option value="large">24 × 24 × 24 in</option>
+              <option value="small">15 × 15 × 15 in</option>
+            </select>
+            <p class="hint">VEX U teams field two robots in a season and run them as
+              an alliance, so each gets its own entry — one inside a 24-inch cube and
+              one inside a 15-inch cube.</p>
+          </div>
         </fieldset>
 
         <fieldset>
@@ -284,14 +293,33 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
           <div class="filebox">
             <div>
               <div class="name" id="nbname">No notebook set</div>
-              <p class="hint" id="nbhint">A PDF of the team's engineering notebook. Copied into notebooks/.</p>
+              <p class="hint" id="nbhint">A PDF of the team's engineering notebook, up to 60 MB.</p>
             </div>
             <div style="display:flex;gap:8px">
               <button type="button" class="ghost tiny" id="picknb">Choose PDF…</button>
               <button type="button" class="ghost tiny" id="clearnb">Clear</button>
             </div>
           </div>
-          <div class="grid2" style="margin-top:14px">
+          <div class="field" style="margin-top:14px">
+            <label for="f-rotation">If the model shows up on its side</label>
+            <select id="f-rotation">
+              <option value="">It looks right — no rotation</option>
+              <option value="-90,0,0">Tip it upright (CAD Z-up — the usual fix)</option>
+              <option value="90,0,0">Tip it the other way</option>
+              <option value="0,90,0">Turn a quarter left</option>
+              <option value="0,-90,0">Turn a quarter right</option>
+              <option value="0,180,0">Turn it around</option>
+              <option value="180,0,0">It's upside down</option>
+            </select>
+            <p class="hint">CAD treats Z as up, the web treats Y as up. Exports that skip
+              the conversion arrive lying down. Better fixed at export — in Blender's
+              glTF panel, tick <b>+Y Up</b> — but this handles what you can't re-export.</p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Judges notebook</legend>
+          <div class="grid2">
             <div class="field">
               <label for="f-nbpages">Pages</label>
               <input type="text" id="f-nbpages" placeholder="62">
@@ -338,15 +366,10 @@ details.preview pre{background:#1B2225;color:#D6DCDA;padding:16px;overflow:auto;
 
       <div class="actions">
         <button id="save">Save to project</button>
-        <button class="ghost" id="download">Download robots.json</button>
+        <button class="ghost" id="download">Export a backup</button>
         <button class="danger" id="del">Delete robot</button>
         <span class="toast" id="toast"></span>
       </div>
-
-      <details class="preview">
-        <summary class="eyebrow" style="cursor:pointer">Preview robots.json</summary>
-        <pre id="json"></pre>
-      </details>
     </main>
   </div>
   <footer>
@@ -367,7 +390,8 @@ const $ = id => document.getElementById(id);
    the local filesystem any more. */
 const API = "https://robot-archive-api-production.up.railway.app";
 
-const MAX_MODEL = 20 * 1048576;   // matches the server's limit
+const MAX_MODEL    = 20 * 1048576;   // matches the server's limits
+const MAX_NOTEBOOK = 60 * 1048576;
 const api = (path, opts = {}) =>
   fetch(API + path, {
     credentials: "include",          // the session is a cookie
@@ -449,7 +473,7 @@ async function loadRobots(){
     if (!res.ok) throw new Error(`the API returned ${res.status}`);
     data = await res.json();
     index = data.length ? data.length - 1 : -1;
-    renderList(); fillForm(); renderJson();
+    renderList(); fillForm();
   } catch (err) {
     toast("Could not load robots: " + err.message, "err");
   }
@@ -463,7 +487,9 @@ function renderList(){
     const b = document.createElement("button");
     b.type = "button";
     b.setAttribute("aria-current", i === index);
-    b.innerHTML = `<span class="g">${r.game || "Untitled"}</span><span class="y">${r.year || ""} · ${r.team || ""}</span>`;
+    b.innerHTML = `<span class="g">${r.game || "Untitled"}</span>`
+      + `<span class="y">${r.year || ""} · ${r.team || ""}`
+      + `${r.slot ? " · " + (r.slot === "large" ? "24 in" : "15 in") : ""}</span>`;
     b.addEventListener("click", ()=>{ commit(); index = i; renderList(); fillForm(); });
     li.append(b);
     return li;
@@ -477,7 +503,7 @@ $("add").addEventListener("click", ()=>{
               award:"", record:"",
               specs:{}, note:"" });
   index = data.length - 1;
-  renderList(); fillForm(); renderJson();
+  renderList(); fillForm();
 });
 $("up").addEventListener("click", ()=>swap(-1));
 $("down").addEventListener("click", ()=>swap(1));
@@ -486,7 +512,7 @@ function swap(d){
   if (index < 0 || j < 0 || j >= data.length) return;
   commit();
   [data[index], data[j]] = [data[j], data[index]];
-  index = j; renderList(); renderJson();
+  index = j; renderList();
 }
 
 /* ---------------- repeating rows ---------------- */
@@ -653,6 +679,14 @@ const GAMES = {
     "2021":"Tipping Point","2022":"Spin Up","2023":"Over Under",
     "2024":"High Stakes","2025":"Push Back","2026":"Override"
   },
+  "VEX U": {
+    "2007":"Bridge Battle","2008":"Elevation","2009":"Clean Sweep","2010":"Round Up",
+    "2011":"Gateway","2012":"Sack Attack","2013":"Toss Up","2014":"Skyrise",
+    "2015":"Nothing But Net","2016":"Starstruck","2017":"In the Zone",
+    "2018":"Turning Point","2019":"Tower Takeover","2020":"Change Up",
+    "2021":"Tipping Point","2022":"Spin Up","2023":"Over Under",
+    "2024":"High Stakes","2025":"Push Back","2026":"Override"
+  },
   "VEX IQ": {
     "2013":"Add It Up","2014":"Highrise","2015":"Bank Shot","2016":"Crossover",
     "2017":"Ringmaster","2018":"Next Level","2019":"Squared Away","2020":"Rise Above",
@@ -669,13 +703,26 @@ function startYear(v){
 function prettyYear(y){
   return y ? `${y}\u2013${String(Number(y) + 1).slice(2)}` : "";
 }
+/* V5 and VEX U share game names, so a game alone no longer identifies the
+   program. Prefer the program already chosen; only fall back to a unique
+   match across all programs. */
 function findGame(name){
   const n = (name || "").trim().toLowerCase();
   if (!n) return null;
+
+  const chosen = $("f-program").value.trim();
+  if (GAMES[chosen])
+    for (const [y, g] of Object.entries(GAMES[chosen]))
+      if (g.toLowerCase() === n) return { program: chosen, year: y };
+
+  const hits = [];
   for (const [prog, years] of Object.entries(GAMES))
     for (const [y, g] of Object.entries(years))
-      if (g.toLowerCase() === n) return { program: prog, year: y };
-  return null;
+      if (g.toLowerCase() === n) hits.push({ program: prog, year: y });
+
+  if (hits.length === 1) return hits[0];
+  /* Ambiguous (V5 vs VEX U): take the year, leave the program to the user. */
+  return hits.length ? { program: null, year: hits[0].year } : null;
 }
 
 /* Offer that program's games as suggestions in the Game field. */
@@ -718,9 +765,9 @@ function fillYearFromGame(){
   if (!yr.value.trim() || yr.dataset.auto === yr.value){
     yr.value = prettyYear(hit.year); yr.dataset.auto = yr.value;
   }
-  if (!prog.value.trim() || prog.dataset.auto === prog.value){
+  if (hit.program && (!prog.value.trim() || prog.dataset.auto === prog.value)){
     prog.value = hit.program; prog.dataset.auto = hit.program;
-    refreshGameList();
+    refreshGameList(); showSlot();
   }
   seasonNote();
 }
@@ -782,6 +829,14 @@ function mementoFilename(i, file){
 $("picknb").addEventListener("click", async ()=>{
   const file = await pickFile([{description:"PDF", accept:{"application/pdf":[".pdf"]}}]);
   if (!file) return;
+  if (file.size > MAX_NOTEBOOK){
+    $("nbhint").innerHTML = `<b style="color:var(--red)">Too big \u2014 `
+      + `${(file.size/1048576).toFixed(0)} MB, and the limit is 60 MB.</b> `
+      + `A long scanned notebook is usually 300 DPI; re-exporting at 150 DPI `
+      + `typically halves it with no loss on screen.`;
+    toast("Notebook is over 60 MB", "err");
+    return;
+  }
   pendingNotebook = file;
   $("nbname").textContent = `notebooks/${notebookFilename()}`;
   $("nbhint").textContent = `${file.name} → copies on save (${(file.size/1048576).toFixed(1)} MB)`;
@@ -789,13 +844,14 @@ $("picknb").addEventListener("click", async ()=>{
 $("clearnb").addEventListener("click", ()=>{
   pendingNotebook = null;
   $("nbname").textContent = "No notebook set";
-  $("nbhint").textContent = "A PDF of the team's engineering notebook. Copied into notebooks/.";
+  $("nbhint").textContent = "A PDF of the team's engineering notebook, up to 60 MB.";
 });
 
 function modelFilename(){
   const y = ($("f-year").value || "").slice(0,4) || "year";
   const t = slug($("f-team").value) || "team";
-  return `${t}-${y}.glb`;   // unique per team per season
+  const sl = $("f-slot").value;          // VEX U fields two robots per season
+  return sl ? `${t}-${y}-${sl}.glb` : `${t}-${y}.glb`;
 }
 
 /* ---------------- form <-> data ---------------- */
@@ -826,7 +882,8 @@ function fillForm(){
   $("nbname").textContent = nb.file || "No notebook set";
   $("nbhint").textContent = nb.file
     ? "Choose a new PDF to replace it."
-    : "A PDF of the team's engineering notebook. Copied into notebooks/.";
+    : "A PDF of the team's engineering notebook, up to 60 MB.";
+  $("f-rotation").value = Array.isArray(r.rotation) ? r.rotation.join(",") : "";
   $("f-nbpages").value = nb.pages || "";
   $("f-nbnote").value  = nb.note || "";
   $("mementos").replaceChildren(...(r.mementos || [])
@@ -836,6 +893,8 @@ function fillForm(){
   $("specs").replaceChildren(...specs.map(([k,v])=>specRow(k,v)));
   refreshGameList();
   refreshSpecLabels();
+  showSlot();
+  $("f-slot").value = r.slot || "";
   seasonNote();
 }
 
@@ -847,6 +906,8 @@ function commit(){
   r.year    = $("f-year").value.trim();
   r.team    = $("f-team").value.trim();
   r.teamName = $("f-teamname").value.trim();
+  const slot = $("f-slot").value;
+  if (r.program === "VEX U" && slot) r.slot = slot; else delete r.slot;
   r.record  = $("f-record").value.trim();
   r.award   = $("f-award").value.trim();
   r.note    = $("f-note").value.trim();
@@ -863,6 +924,10 @@ function commit(){
   });
 
   if (pendingModel) r.model = `models/${modelFilename()}`;
+
+  const rot = $("f-rotation").value;
+  if (rot) r.rotation = rot.split(",").map(Number);
+  else delete r.rotation;
   if (pendingLogo)  r.logo  = `logos/${logoFilename(pendingLogo)}`;
 
   const nbFile = pendingNotebook ? `notebooks/${notebookFilename()}`
@@ -909,7 +974,7 @@ async function upload(kind, file, { team, year, index: idx = 0 }){
 }
 
 $("save").addEventListener("click", async ()=>{
-  commit(); renderList(); renderJson();
+  commit(); renderList();
   if (!signedIn) return toast("Sign in first", "err");
 
   const r = data[index];
@@ -918,6 +983,10 @@ $("save").addEventListener("click", async ()=>{
 
   if (pendingModel && pendingModel.size > MAX_MODEL){
     toast(`Model is ${(pendingModel.size/1048576).toFixed(1)} MB \u2014 compress it first`, "err");
+    return;
+  }
+  if (pendingNotebook && pendingNotebook.size > MAX_NOTEBOOK){
+    toast(`Notebook is ${(pendingNotebook.size/1048576).toFixed(0)} MB \u2014 the limit is 60 MB`, "err");
     return;
   }
 
@@ -974,14 +1043,14 @@ $("save").addEventListener("click", async ()=>{
 });
 
 $("download").addEventListener("click", ()=>{
-  commit(); renderJson();
+  commit();
   const blob = new Blob([JSON.stringify(data, null, 2) + "\n"], {type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "robots.json";
+  a.download = `robot-archive-${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  toast("Downloaded a copy of the data", "ok");
+  toast("Downloaded a snapshot of the whole archive", "ok");
 });
 
 $("del").addEventListener("click", async ()=>{
@@ -1000,9 +1069,14 @@ $("del").addEventListener("click", async ()=>{
   }
 });
 
-function renderJson(){ $("json").textContent = JSON.stringify(data, null, 2); }
+function showSlot(){
+  const isU = $("f-program").value.trim() === "VEX U";
+  $("slotfield").hidden = !isU;
+  if (!isU) $("f-slot").value = "";
+}
 
 $("f-program").addEventListener("change", ()=>{
+  showSlot();
   $("f-program").dataset.auto = "";      // an explicit pick is never overwritten
   refreshGameList(); refreshSpecLabels(); fillGameFromYear(); seasonNote();
 });
@@ -1011,9 +1085,9 @@ $("f-game").addEventListener("input", fillYearFromGame);
 $("f-year").addEventListener("blur", ()=>{
   const y = startYear($("f-year").value);
   if (y) $("f-year").value = prettyYear(y);   // normalise on the way out
-  commit(); renderJson(); renderList();
+  commit(); renderList();
 });
-$("form").addEventListener("input", ()=>{ commit(); renderJson(); renderList(); });
+$("form").addEventListener("input", ()=>{ commit(); renderList(); });
 renderList(); fillForm();
 refreshAuth();
 </script>
