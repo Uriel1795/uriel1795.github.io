@@ -469,10 +469,12 @@ $("signout").addEventListener("click", async ()=>{
 
 async function loadRobots(){
   try {
-    const res = await api("/api/robots");
+    /* The public feed is cached for a minute, which would show a robot you
+       just deleted or edited. The editor always wants the current state. */
+    const res = await api("/api/robots", { cache: "no-store" });
     if (!res.ok) throw new Error(`the API returned ${res.status}`);
     data = await res.json();
-    index = data.length ? data.length - 1 : -1;
+    index = data.length ? Math.min(index < 0 ? data.length - 1 : index, data.length - 1) : -1;
     renderList(); fillForm();
   } catch (err) {
     toast("Could not load robots: " + err.message, "err");
@@ -1056,11 +1058,14 @@ $("download").addEventListener("click", ()=>{
 $("del").addEventListener("click", async ()=>{
   if (index < 0) return;
   const r = data[index];
-  if (!confirm(`Delete "${r.game || "Untitled"} ${r.year || ""}" for team ${r.team}?\n\n` +
+  const which = r.slot === "large" ? " (24 in robot)" : r.slot === "small" ? " (15 in robot)" : "";
+  if (!confirm(`Delete "${r.game || "Untitled"} ${r.year || ""}"${which} for team ${r.team}?\n\n` +
                `This removes the entry. Files already uploaded stay in storage.`)) return;
   try {
-    const res = await api(`/api/robots/${encodeURIComponent(r.team)}/${(r.year||"").slice(0,4)}`,
-                          { method: "DELETE" });
+    const res = await api(
+      `/api/robots/${encodeURIComponent(r.team)}/${(r.year||"").slice(0,4)}`
+      + (r.slot ? `?slot=${r.slot}` : ""),
+      { method: "DELETE" });
     if (!res.ok) throw new Error((await res.json()).error || `failed (${res.status})`);
     toast("Deleted", "ok");
     await loadRobots();
