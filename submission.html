@@ -208,6 +208,13 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
               <input type="text" id="f-teamname" placeholder="Gear Grinders">
             </div>
           </div>
+          <div class="field" style="margin-top:14px">
+            <label for="f-channel">Team channel or page</label>
+            <input type="text" id="f-channel" placeholder="https://youtube.com/@yourteam">
+            <p class="hint">A link to the team's own YouTube channel, or any public page
+              they run. This site doesn't publish photos of students — a link lets a team
+              introduce themselves on a page they control.</p>
+          </div>
           <div class="filebox" style="margin-top:14px">
             <div>
               <div class="name" id="logoname">No logo set</div>
@@ -864,6 +871,7 @@ function fillForm(){
   $("f-year").value    = r.year || "";
   $("f-team").value     = r.team || "";
   $("f-teamname").value = r.teamName || "";
+  $("f-channel").value  = r.channel || "";
   $("f-record").value  = r.record || "";
   $("f-award").value   = r.award || "";
   $("f-note").value    = r.note || "";
@@ -908,6 +916,8 @@ function commit(){
   r.year    = $("f-year").value.trim();
   r.team    = $("f-team").value.trim();
   r.teamName = $("f-teamname").value.trim();
+  const ch = $("f-channel").value.trim();
+  if (ch) r.channel = ch; else delete r.channel;
   const slot = $("f-slot").value;
   if (r.program === "VEX U" && slot) r.slot = slot; else delete r.slot;
   r.record  = $("f-record").value.trim();

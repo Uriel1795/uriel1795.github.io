@@ -186,6 +186,11 @@ body{
 }
 .robotsize:empty{display:none}
 
+.channel{margin:0 0 12px;font-size:13.5px}
+.channel:empty{display:none}
+.channel a{color:var(--blue);text-decoration:none;border-bottom:1px solid var(--rule)}
+.channel a:hover{border-color:var(--blue)}
+
 .robotpick{margin:0 0 12px}
 .robotpick[hidden]{display:none}
 .robotpick label{
@@ -381,6 +386,7 @@ footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
       <div class="crest" id="crest"></div>
       <p class="teamname" id="teamname"></p>
       <p class="robotsize" id="robotsize"></p>
+      <p class="channel" id="channel"></p>
       <div class="robotpick" id="robotpick" hidden>
         <label for="whichrobot">Robot size</label>
         <select id="whichrobot"></select>
@@ -870,6 +876,18 @@ function renderCrest(s){
   el("teamname").textContent = s.teamName || teamLabel || "";
   /* VEX U size class, on its own line beneath the team name. */
   el("robotsize").textContent = SLOT_LABELS[s.slot] ? `${SLOT_LABELS[s.slot]} in` : "";
+
+  const ch = el("channel");
+  ch.replaceChildren();
+  const channelUrl = s.channel || (ENTRIES.find(e => e.channel) || {}).channel;
+  if (channelUrl){
+    const a = document.createElement("a");
+    a.href = channelUrl;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.textContent = "The team\u2019s channel \u2192";
+    ch.append(a);
+  }
   el("platebrief").textContent =
     [s.team, s.game, s.year, SLOT_LABELS[s.slot] ? `${SLOT_LABELS[s.slot]} in` : null]
       .filter(Boolean).join("  \u00b7  ");

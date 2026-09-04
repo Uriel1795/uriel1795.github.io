@@ -15,6 +15,10 @@ CREATE TABLE teams (
     name        TEXT,                          -- 'Gear Grinders'
     program     TEXT NOT NULL,                 -- 'VEX IQ' | 'VEX V5'
     logo_url    TEXT,                          -- one per team, not per season
+    channel_url TEXT,                          -- the team's own YouTube channel or
+                                               -- public page. The site doesn't publish
+                                               -- faces; linking to what a team already
+                                               -- publishes is their call, not ours.
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT teams_program_valid CHECK (program IN ('VEX IQ', 'VEX V5', 'VEX U'))
