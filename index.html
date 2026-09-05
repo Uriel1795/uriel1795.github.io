@@ -35,24 +35,37 @@ body{
 }
 .mark em{font-style:normal;color:var(--red)}
 .mast-right{display:flex;align-items:center;gap:16px}
+.menu{position:relative}
+.menubtn{
+  font:inherit;font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink);background:none;cursor:pointer;
+  border:1.5px solid var(--ink);padding:6px 12px;display:flex;align-items:center;gap:8px;
+}
+.menubtn:hover,.menubtn[aria-expanded="true"]{background:var(--ink);color:var(--paper)}
+.menubtn .caret{
+  width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+  transform:rotate(45deg);margin-top:-3px;transition:transform .15s ease;
+}
+.menubtn[aria-expanded="true"] .caret{transform:rotate(-135deg);margin-top:2px}
+.menulist{
+  position:absolute;top:calc(100% + 6px);right:0;z-index:30;min-width:210px;
+  background:var(--paper);border:1.5px solid var(--ink);
+  box-shadow:0 14px 34px rgba(0,0,0,.18);padding:5px;
+}
+.menulist[hidden]{display:none}
+.menulist a{
+  display:block;padding:9px 11px;color:var(--ink);text-decoration:none;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;
+}
+.menulist a:hover,.menulist a:focus-visible{background:var(--ink);color:var(--paper);outline:none}
+.menulist a[hidden]{display:none}
+.menusep{border-top:1px solid var(--rule);margin:5px 0}
+.menusep[hidden]{display:none}
+
 .count{
   font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-60);
   letter-spacing:.06em;text-transform:uppercase;
 }
-.toollink{
-  font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;
-  text-transform:uppercase;text-decoration:none;color:var(--ink-60);
-  border-bottom:1.5px solid var(--rule);padding-bottom:3px;white-space:nowrap;
-  transition:color .15s ease,border-color .15s ease;
-}
-.toollink:hover{color:var(--ink);border-color:var(--ink)}
-.submitlink{
-  font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;
-  text-transform:uppercase;text-decoration:none;color:var(--ink);
-  border:1.5px solid var(--ink);padding:6px 12px;white-space:nowrap;
-}
-.submitlink:hover{background:var(--ink);color:var(--paper)}
-.submitlink[hidden]{display:none}
 
 .lede{margin:22px 0 0;font-size:17px;line-height:1.65;color:var(--ink-60)}
 @media (max-width:620px){
@@ -164,8 +177,25 @@ footer{
     <div class="mark">Robot <em>Archive</em></div>
     <div class="mast-right">
       <div class="count" id="count"></div>
-      <a class="toollink" href="compress.html">Compress a model</a>
-      <a class="submitlink" id="submitlink" href="submit.html">+ Submit a robot</a>
+      <div class="menu">
+        <button class="menubtn" id="menubtn" type="button"
+                aria-haspopup="true" aria-expanded="false" aria-controls="menulist">
+          Menu <span class="caret" aria-hidden="true"></span>
+        </button>
+        <div class="menulist" id="menulist" role="menu" hidden>
+          <a role="menuitem" href="index.html">The archive</a>
+          <a role="menuitem" href="submit.html">Submit a robot</a>
+          <div class="menusep"></div>
+          <a role="menuitem" href="compress.html">Compress a model</a>
+          <!-- convert.html goes here when it exists -->
+          <div class="menusep"></div>
+          <a role="menuitem" href="about.html">About this project</a>
+          <a role="menuitem" href="contact.html">Contact</a>
+          <div class="menusep" id="adminsep" hidden></div>
+          <a role="menuitem" href="submission.html" class="adminitem" hidden>Add a robot directly</a>
+          <a role="menuitem" href="review.html" class="adminitem" hidden>Review queue</a>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -186,8 +216,8 @@ footer{
     <div class="row">
       <a href="index.html">Archive</a>
       <a href="submit.html">Submit a robot</a>
-      <a href="about.html">About this project</a>
       <a href="compress.html">Compress a model</a>
+      <a href="about.html">About this project</a>
       <a href="contact.html">Contact</a>
     </div>
     <span id="foot"></span>
@@ -386,6 +416,33 @@ const DATA_URL = "https://robot-archive-api-production.up.railway.app/api/robots
   }
   q.addEventListener("input", filter);
   q.addEventListener("keydown", e => { if (e.key === "Escape"){ q.value=""; filter(); } });
+})();
+</script>
+<script>
+/* The tools menu. The admin entries are shown only when the site is being
+   served locally — that is tidiness, not security: those pages are useless
+   without the password, and the password is checked by the API, not here. */
+(function(){
+  const btn = document.getElementById("menubtn");
+  const list = document.getElementById("menulist");
+  if (!btn || !list) return;
+
+  if (["localhost","127.0.0.1","[::1]",""].includes(location.hostname)){
+    document.getElementById("adminsep").hidden = false;
+    document.querySelectorAll(".adminitem").forEach(a => a.hidden = false);
+  }
+
+  const close = () => { list.hidden = true; btn.setAttribute("aria-expanded","false"); };
+  const open  = () => {
+    list.hidden = false; btn.setAttribute("aria-expanded","true");
+    list.querySelector("a:not([hidden])")?.focus();
+  };
+
+  btn.addEventListener("click", e => { e.stopPropagation(); list.hidden ? open() : close(); });
+  document.addEventListener("click", e => { if (!e.target.closest(".menu")) close(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !list.hidden){ close(); btn.focus(); }
+  });
 })();
 </script>
 </body>
