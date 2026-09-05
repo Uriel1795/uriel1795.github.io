@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Submit a robot — Robot Archive</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#12171A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F4F2; --ink:#12171A; --ink-60:#5A6468; --rule:#C9CDC9;
+  --red:#E4002B; --blue:#0072CE; --alu:#B4BAB8; --field:#fff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:"Archivo",system-ui,sans-serif;font-variation-settings:"wdth" 100;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:760px;margin:0 auto;padding:20px 20px 72px}
+
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding-bottom:14px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap;
+}
+.mark{font-variation-settings:"wdth" 118,"wght" 800;font-size:24px;text-transform:uppercase}
+.mark em{font-style:normal;color:var(--red)}
+.mark a{color:inherit;text-decoration:none}
+.mark a:hover{color:var(--red)}
+.mark a:hover em{color:var(--ink)}
+.mark span{
+  font-variation-settings:"wdth" 100,"wght" 500;font-size:12px;letter-spacing:.16em;
+  color:var(--ink-60);margin-left:10px;
+}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-60);font-weight:500;margin:0 0 10px;
+}
+.lede{margin:22px 0 0;font-size:16.5px;line-height:1.65;color:var(--ink-60)}
+.lede b{color:var(--ink);font-variation-settings:"wdth" 100,"wght" 700}
+a{color:var(--blue)}
+
+fieldset{border:1px solid var(--rule);margin:22px 0 0;padding:18px}
+legend{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-60);padding:0 8px;
+}
+label{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-60);margin:0 0 5px;
+}
+input[type=text],textarea,select{
+  width:100%;font:inherit;font-size:15px;padding:9px 11px;background:var(--field);
+  border:1px solid var(--rule);color:var(--ink);border-radius:0;appearance:none;
+}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--blue);outline-offset:-1px}
+textarea{min-height:86px;resize:vertical;line-height:1.55}
+.field{margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media (max-width:640px){.grid2,.grid3{grid-template-columns:1fr}}
+.hint{font-size:12.5px;color:var(--ink-60);margin:5px 0 0;line-height:1.5}
+
+button{
+  font:inherit;cursor:pointer;border:1.5px solid var(--ink);background:var(--ink);
+  color:var(--paper);padding:11px 20px;font-size:15px;
+  font-variation-settings:"wdth" 96,"wght" 600;
+}
+button:hover{background:#000}
+button.ghost{background:none;color:var(--ink)}
+button.ghost:hover{background:var(--ink);color:var(--paper)}
+button.tiny{padding:5px 10px;font-size:11.5px;font-family:"IBM Plex Mono",monospace}
+button:disabled{opacity:.35;cursor:not-allowed}
+
+.filebox{
+  border:1px dashed var(--rule);background:var(--field);padding:14px;
+  display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+}
+.filebox .name{font-family:"IBM Plex Mono",monospace;font-size:12.5px;word-break:break-all}
+.filebox .name.none{color:var(--ink-60)}
+
+.row{display:grid;grid-template-columns:1.2fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+@media (max-width:640px){.row{grid-template-columns:1fr}}
+
+.notice{
+  margin:0 0 16px;padding:12px 14px;background:#fff;border-left:3px solid var(--red);
+  font-size:13.5px;line-height:1.6;
+}
+.agree{
+  display:flex;gap:12px;align-items:flex-start;margin-top:6px;
+  font-size:14.5px;line-height:1.6;
+}
+.agree input{width:20px;height:20px;flex:0 0 auto;margin-top:2px;accent-color:var(--ink)}
+.agree ul{margin:0 0 12px;padding-left:20px}
+.agree li{margin-bottom:7px}
+
+/* the honeypot: invisible to people, filled in by bots */
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+.actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:22px}
+.toast{font-family:"IBM Plex Mono",monospace;font-size:13px}
+.toast.ok{color:#1B7F3B}.toast.err{color:var(--red)}
+
+.progress{
+  margin-top:16px;background:#1B2225;color:#D6DCDA;padding:14px 16px;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.7;
+  white-space:pre-wrap;max-height:200px;overflow:auto;
+}
+.progress[hidden]{display:none}
+.progress .ok{color:#7BD88F}.progress .bad{color:#FF8AA0}
+
+/* success */
+#done[hidden],#form[hidden],#closed[hidden]{display:none}
+.token{
+  margin-top:20px;padding:22px;background:#fff;border:1px solid var(--rule);
+}
+.token .url{
+  font-family:"IBM Plex Mono",monospace;font-size:15px;word-break:break-all;
+  padding:12px 14px;background:var(--paper);border:1px solid var(--rule);margin:12px 0 16px;
+}
+footer{
+  margin-top:48px;padding-top:18px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);line-height:1.9;
+}
+footer a{color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--rule)}
+footer a:hover{color:var(--ink);border-color:var(--ink)}
+footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark"><a href="index.html">← Robot <em>Archive</em></a> <span>Submit</span></div>
+  </header>
+
+  <p class="lede">Send in your robot and it goes on the archive — a page of its own, with
+    the 3D model, your notebook and whatever else you want kept.
+    <b>It's reviewed before it appears</b>, and nothing publishes until after Worlds
+    unless you've already shown the robot yourself.</p>
+
+  <div id="closed" hidden>
+    <p class="notice" style="margin-top:22px">
+      <b>Submissions are closed at the moment.</b> If you'd like to send in a robot,
+      <a href="contact.html">get in touch</a> and I'll sort it out directly.
+    </p>
+  </div>
+
+  <form id="form" autocomplete="off" hidden>
+
+    <fieldset>
+      <legend>Your team</legend>
+      <div class="grid2">
+        <div class="field">
+          <label for="team">Team number *</label>
+          <input type="text" id="team" placeholder="34Q, 4610A, 271B…" maxlength="16">
+        </div>
+        <div class="field">
+          <label for="teamName">Team name</label>
+          <input type="text" id="teamName" placeholder="Gear Grinders" maxlength="80">
+        </div>
+      </div>
+      <div class="field">
+        <label for="channel">Team channel or page</label>
+        <input type="text" id="channel" placeholder="https://youtube.com/@yourteam" maxlength="300">
+        <p class="hint">Optional. The archive doesn't publish photos of students, so a link
+          to your own channel is how people find out who you are.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Season</legend>
+      <div class="grid3">
+        <div class="field">
+          <label for="program">Program *</label>
+          <select id="program">
+            <option value="">— pick one —</option>
+            <option>VEX IQ</option>
+            <option>VEX V5</option>
+            <option>VEX U</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="year">Year *</label>
+          <input type="text" id="year" placeholder="2025 or 2025-26" maxlength="12">
+        </div>
+        <div class="field">
+          <label for="game">Game</label>
+          <input type="text" id="game" placeholder="fills in from the year" list="games" maxlength="60">
+          <datalist id="games"></datalist>
+        </div>
+      </div>
+      <p class="hint" id="seasonhint"></p>
+
+      <div class="field" id="slotfield" hidden style="margin-top:14px">
+        <label for="slot">Which robot? *</label>
+        <select id="slot">
+          <option value="">— pick one —</option>
+          <option value="large">24 × 24 × 24 in</option>
+          <option value="small">15 × 15 × 15 in</option>
+        </select>
+        <p class="hint">VEX U teams field two robots a season, so each gets its own entry.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>The robot</legend>
+      <div class="filebox">
+        <div>
+          <div class="name none" id="modelname">No model chosen</div>
+          <p class="hint" id="modelhint">A .glb file, up to 20 MB. Straight out of CAD it
+            will be far bigger — <a href="compress.html">shrink it here</a> first, it takes
+            about a minute.</p>
+        </div>
+        <button type="button" class="ghost tiny" id="pickmodel">Choose .glb…</button>
+      </div>
+
+      <div class="field" style="margin-top:14px">
+        <label for="rotation">If the model shows up on its side</label>
+        <select id="rotation">
+          <option value="">It looks right</option>
+          <option value="-90,0,0">Tip it upright (the usual fix)</option>
+          <option value="90,0,0">Tip it the other way</option>
+          <option value="0,90,0">Turn a quarter left</option>
+          <option value="0,-90,0">Turn a quarter right</option>
+          <option value="0,180,0">Turn it around</option>
+          <option value="180,0,0">It's upside down</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Judges notebook</legend>
+      <div class="filebox">
+        <div>
+          <div class="name none" id="nbname">No notebook chosen</div>
+          <p class="hint" id="nbhint">Optional. A PDF, up to 60 MB.</p>
+        </div>
+        <button type="button" class="ghost tiny" id="picknb">Choose PDF…</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Mementos</legend>
+      <p class="notice">
+        <b>No identifiable people.</b> Photos of the robot, the build, the field or the
+        pit — not the team. Hands, arms and unrecognisable figures in the background are
+        fine; faces are not. Submissions with faces in them get turned down, so it's worth
+        checking before you send.
+      </p>
+      <div id="mementos"></div>
+      <button type="button" class="ghost tiny" id="addmemento">+ Add a photo</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>About the robot</legend>
+      <div class="grid2">
+        <div class="field">
+          <label for="record">Record</label>
+          <input type="text" id="record" placeholder="29–3" maxlength="24">
+        </div>
+        <div class="field">
+          <label for="award">Award</label>
+          <input type="text" id="award" placeholder="Excellence Award — Regional" maxlength="160">
+        </div>
+      </div>
+      <div id="specs"></div>
+      <button type="button" class="ghost tiny" id="addspec">+ Add a spec</button>
+      <div class="field" style="margin-top:16px">
+        <label for="note">Anything worth remembering</label>
+        <textarea id="note" maxlength="2000" placeholder="What was interesting, what broke, what you'd do differently."></textarea>
+      </div>
+      <div class="field">
+        <label for="revealUrl">Already shown this robot publicly?</label>
+        <input type="text" id="revealUrl" placeholder="https://youtube.com/watch?v=…" maxlength="300">
+        <p class="hint">If there's a reveal video or post, link it and the robot can go up
+          before Worlds. Otherwise it publishes after Worlds ends.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Before you send</legend>
+      <div class="agree">
+        <input type="checkbox" id="agree">
+        <label for="agree" style="font:inherit;text-transform:none;letter-spacing:0;color:var(--ink);margin:0">
+          <ul>
+            <li>This is your team's robot, and the files are yours to share.</li>
+            <li>No photo you're sending shows anyone's face.</li>
+            <li>What you submit will be public and may stay online indefinitely.</li>
+            <li>Submissions are reviewed. Details may be edited, or a submission declined.</li>
+            <li>Anything can be taken down on request — just <a href="contact.html">ask</a>,
+              no reason needed.</li>
+          </ul>
+          I've read this and it's all true.
+        </label>
+      </div>
+
+      <!-- Not for people. Bots fill it in; that's the point. -->
+      <div class="hp" aria-hidden="true">
+        <label for="website">Website</label>
+        <input type="text" id="website" tabindex="-1" autocomplete="off">
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" id="send">Send it in</button>
+      <span class="toast" id="toast"></span>
+    </div>
+
+    <pre class="progress" id="progress" hidden></pre>
+  </form>
+
+  <section id="done" hidden>
+    <div class="token">
+      <h2 class="eyebrow">That's in</h2>
+      <p style="margin:0;font-size:16px;line-height:1.65">Thanks — it's in the queue.
+        <b>Keep this link</b>; it's the only way to check what happened to your
+        submission, and there's no way to recover it if you lose it.</p>
+      <div class="url" id="statusurl"></div>
+      <div class="actions" style="margin-top:0">
+        <button type="button" id="copy">Copy the link</button>
+        <a id="mailself" class="ghost" style="text-decoration:none;border:1.5px solid var(--ink);padding:11px 20px;font-size:15px;color:var(--ink);font-variation-settings:'wdth' 96,'wght' 600">Email it to myself</a>
+      </div>
+      <p class="hint" id="embargonote" style="margin-top:16px"></p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="row">
+      <a href="index.html">Archive</a>
+      <a href="submit.html">Submit a robot</a>
+      <a href="about.html">About this project</a>
+      <a href="compress.html">Compress a model</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+const API = "https://robot-archive-api-production.up.railway.app";
+const $ = id => document.getElementById(id);
+const started = Date.now();
+
+const api = (path, opts = {}) =>
+  fetch(API + path, {
+    headers: opts.body ? { "Content-Type": "application/json" } : {},
+    ...opts,
+  });
+
+const MAX = { model: 20 * 1048576, notebook: 60 * 1048576, memento: 8 * 1048576 };
+let pendingModel = null, pendingNotebook = null;
+const pendingMementos = {};
+
+function toast(msg, kind = ""){
+  const t = $("toast");
+  t.textContent = msg; t.className = "toast " + kind;
+  if (msg) setTimeout(() => { if (t.textContent === msg) t.textContent = ""; }, 6000);
+}
+function log(msg, cls = ""){
+  const p = $("progress");
+  p.hidden = false;
+  p.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+  p.scrollTop = p.scrollHeight;
+}
+
+/* ---------------- season table ---------------- */
+const GAMES = {
+  "VEX V5": {
+    "2018":"Turning Point","2019":"Tower Takeover","2020":"Change Up",
+    "2021":"Tipping Point","2022":"Spin Up","2023":"Over Under",
+    "2024":"High Stakes","2025":"Push Back","2026":"Override"
+  },
+  "VEX IQ": {
+    "2018":"Next Level","2019":"Squared Away","2020":"Rise Above",
+    "2021":"Pitching In","2022":"Slapshot","2023":"Full Volume",
+    "2024":"Rapid Relay","2025":"Mix & Match","2026":"Level Up"
+  },
+};
+GAMES["VEX U"] = { ...GAMES["VEX V5"] };          // VEX U plays the V5 game
+
+const startYear = v => String(v ?? "").match(/\b(19|20)\d{2}\b/)?.[0] ?? null;
+const prettyYear = y => y ? `${y}\u2013${String(Number(y) + 1).slice(-2).padStart(2,"0")}` : "";
+
+function refreshGames(){
+  const prog = $("program").value;
+  const years = GAMES[prog];
+  $("games").replaceChildren(...(years
+    ? Object.entries(years).sort((a,b) => b[0].localeCompare(a[0])).map(([y,g]) => {
+        const o = document.createElement("option");
+        o.value = g; o.label = prettyYear(y); return o;
+      })
+    : []));
+}
+function fillGame(){
+  const prog = $("program").value, y = startYear($("year").value);
+  if (!y || !GAMES[prog]) return seasonNote();
+  const expect = GAMES[prog][y];
+  if (expect && !$("game").value.trim()) $("game").value = expect;
+  seasonNote();
+}
+function seasonNote(){
+  const prog = $("program").value, y = startYear($("year").value), game = $("game").value.trim();
+  const n = $("seasonhint");
+  if (!prog || !y){ n.textContent = ""; n.style.color = ""; return; }
+  const expect = GAMES[prog]?.[y];
+  if (!expect){ n.textContent = `No ${prog} season on file for ${prettyYear(y)}.`;
+                n.style.color = "var(--red)"; return; }
+  if (!game || expect.toLowerCase() === game.toLowerCase()){
+    n.textContent = `${prog} ${prettyYear(y)} \u2014 ${expect}.`; n.style.color = "";
+  } else {
+    n.textContent = `${prog} ${prettyYear(y)} was ${expect}. Sending anyway is fine.`;
+    n.style.color = "var(--red)";
+  }
+}
+function showSlot(){
+  const isU = $("program").value === "VEX U";
+  $("slotfield").hidden = !isU;
+  if (!isU) $("slot").value = "";
+}
+$("program").addEventListener("change", () => { refreshGames(); showSlot(); fillGame(); });
+$("year").addEventListener("input", fillGame);
+$("game").addEventListener("input", seasonNote);
+$("year").addEventListener("blur", () => {
+  const y = startYear($("year").value);
+  if (y) $("year").value = prettyYear(y);
+});
+
+/* ---------------- files ---------------- */
+function pickFile(accept){
+  return new Promise(res => {
+    const i = document.createElement("input");
+    i.type = "file"; i.accept = accept;
+    i.onchange = () => res(i.files[0] || null);
+    i.click();
+  });
+}
+const mb = b => (b / 1048576).toFixed(1);
+
+$("pickmodel").addEventListener("click", async () => {
+  const f = await pickFile(".glb");
+  if (!f) return;
+  if (f.size > MAX.model){
+    $("modelhint").innerHTML = `<b style="color:var(--red)">That's ${mb(f.size)} MB and the
+      limit is 20 MB.</b> <a href="compress.html">Shrink it here</a> first — it usually
+      takes a minute and the result looks the same.`;
+    return;
+  }
+  pendingModel = f;
+  $("modelname").textContent = `${f.name} \u00b7 ${mb(f.size)} MB`;
+  $("modelname").classList.remove("none");
+  $("modelhint").textContent = "Ready to send.";
+});
+
+$("picknb").addEventListener("click", async () => {
+  const f = await pickFile(".pdf");
+  if (!f) return;
+  if (f.size > MAX.notebook){
+    $("nbhint").innerHTML = `<b style="color:var(--red)">That's ${mb(f.size)} MB and the
+      limit is 60 MB.</b> A long scanned notebook is usually 300 DPI; re-exporting at
+      150 DPI typically halves it with no loss on screen.`;
+    return;
+  }
+  pendingNotebook = f;
+  $("nbname").textContent = `${f.name} \u00b7 ${mb(f.size)} MB`;
+  $("nbname").classList.remove("none");
+  $("nbhint").textContent = "Ready to send.";
+});
+
+function mementoRow(){
+  const id = "m" + Math.random().toString(36).slice(2, 8);
+  const d = document.createElement("div");
+  d.className = "row"; d.dataset.id = id;
+  d.innerHTML = `
+    <div><label>Photo</label><div class="name none m-file">none chosen</div></div>
+    <div><label>Caption</label><input type="text" class="m-cap" maxlength="200"
+         placeholder="First drivetrain, October"></div>
+    <div style="display:flex;gap:6px">
+      <button type="button" class="ghost tiny m-pick">Choose…</button>
+      <button type="button" class="ghost tiny m-del">×</button>
+    </div>`;
+  d.querySelector(".m-pick").addEventListener("click", async () => {
+    const f = await pickFile("image/*");
+    if (!f) return;
+    if (f.size > MAX.memento) return toast(`That photo is ${mb(f.size)} MB; the limit is 8 MB`, "err");
+    pendingMementos[id] = f;
+    const el = d.querySelector(".m-file");
+    el.textContent = `${f.name} \u00b7 ${mb(f.size)} MB`;
+    el.classList.remove("none");
+  });
+  d.querySelector(".m-del").addEventListener("click", () => {
+    delete pendingMementos[id]; d.remove();
+  });
+  return d;
+}
+$("addmemento").addEventListener("click", () => {
+  if ($("mementos").children.length >= 12) return toast("Twelve photos is the limit", "err");
+  $("mementos").append(mementoRow());
+});
+
+function specRow(){
+  const d = document.createElement("div");
+  d.className = "row";
+  d.innerHTML = `
+    <div><label>Label</label><input type="text" class="k" maxlength="40" placeholder="Drivetrain"></div>
+    <div><label>Value</label><input type="text" class="v" maxlength="120" placeholder="6-wheel tank"></div>
+    <button type="button" class="ghost tiny k-del">×</button>`;
+  d.querySelector(".k-del").addEventListener("click", () => d.remove());
+  return d;
+}
+$("addspec").addEventListener("click", () => {
+  if ($("specs").children.length >= 10) return toast("Ten specs is the limit", "err");
+  $("specs").append(specRow());
+});
+
+/* ---------------- sending ---------------- */
+async function upload(kind, file, meta){
+  const res = await api("/api/submissions/upload", {
+    method: "POST",
+    body: JSON.stringify({ kind, filename: file.name, size: file.size, ...meta }),
+  });
+  const info = await res.json();
+  if (!res.ok) throw new Error(info.error || `couldn't prepare the upload (${res.status})`);
+  const put = await fetch(info.uploadUrl, { method: "PUT", body: file });
+  if (!put.ok) throw new Error(`the upload was refused (${put.status})`);
+  return info.key;
+}
+
+$("send").addEventListener("click", async () => {
+  const team = $("team").value.trim();
+  const program = $("program").value;
+  const year = $("year").value.trim();
+
+  if (!team) return toast("A team number is needed", "err");
+  if (!program) return toast("Pick a program", "err");
+  if (!startYear(year)) return toast("A season year is needed", "err");
+  if (program === "VEX U" && !$("slot").value)
+    return toast("VEX U entries need to say which robot this is", "err");
+  if (!$("agree").checked) return toast("Please read and tick the box at the bottom", "err");
+
+  const mementoRows = [...$("mementos").children];
+  const hasMemento = mementoRows.some(r => pendingMementos[r.dataset.id]);
+  if (!pendingModel && !pendingNotebook && !hasMemento)
+    return toast("Send at least one of: a model, a notebook, or a photo", "err");
+
+  const meta = { team, year };
+  $("send").disabled = true;
+  $("progress").hidden = false;
+  $("progress").innerHTML = "";
+
+  try {
+    const body = {
+      team,
+      teamName: $("teamName").value.trim() || undefined,
+      channel: $("channel").value.trim() || undefined,
+      program, year,
+      game: $("game").value.trim() || undefined,
+      slot: $("slot").value || undefined,
+      record: $("record").value.trim() || undefined,
+      award: $("award").value.trim() || undefined,
+      note: $("note").value.trim() || undefined,
+      revealUrl: $("revealUrl").value.trim() || undefined,
+      website: $("website").value,                    // honeypot
+      elapsedMs: Date.now() - started,
+      agreedVersion: "2026-09",
+    };
+
+    const rot = $("rotation").value;
+    if (rot) body.rotation = rot.split(",").map(Number);
+
+    const specs = {};
+    for (const row of $("specs").children){
+      const k = row.querySelector(".k").value.trim();
+      if (k) specs[k] = row.querySelector(".v").value.trim();
+    }
+    if (Object.keys(specs).length) body.specs = specs;
+
+    if (pendingModel){
+      log("Sending the model\u2026");
+      body.model = await upload("model", pendingModel, meta);
+    }
+    if (pendingNotebook){
+      log("Sending the notebook\u2026");
+      body.notebook = { file: await upload("notebook", pendingNotebook, meta) };
+    }
+
+    const mementos = [];
+    for (let i = 0; i < mementoRows.length; i++){
+      const file = pendingMementos[mementoRows[i].dataset.id];
+      if (!file) continue;
+      log(`Sending photo ${mementos.length + 1}\u2026`);
+      mementos.push({
+        image: await upload("memento", file, { ...meta, index: i }),
+        caption: mementoRows[i].querySelector(".m-cap").value.trim() || undefined,
+      });
+    }
+    if (mementos.length) body.mementos = mementos;
+
+    log("Finishing up\u2026");
+    const res = await api("/api/submissions", { method: "POST", body: JSON.stringify(body) });
+    const out = await res.json();
+
+    if (!res.ok){
+      const why = (out.errors || [out.error || "that didn't go through"]).join("  ");
+      log(why, "bad");
+      return toast(why, "err");
+    }
+
+    const url = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}status.html?t=${out.token}`;
+    $("statusurl").textContent = url;
+    $("copy").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(url); toast("Copied", "ok"); }
+      catch { toast("Select the link and copy it", "err"); }
+    });
+    $("mailself").href = "mailto:?subject=" + encodeURIComponent(`Robot Archive — ${team}`) +
+      "&body=" + encodeURIComponent(`Here's the link to check my submission:\n\n${url}\n`);
+    $("embargonote").textContent = out.publishAfter
+      ? "This robot will appear on the archive after Worlds. If you've already shown it publicly and gave a link, it may go up sooner."
+      : "It'll appear on the archive once it's been reviewed.";
+
+    $("form").hidden = true;
+    $("done").hidden = false;
+    scrollTo({ top: 0, behavior: "smooth" });
+  } catch (err) {
+    log(err.message, "bad");
+    toast(err.message, "err");
+  } finally {
+    $("send").disabled = false;
+  }
+});
+
+/* ---------------- are we open? ---------------- */
+(async function(){
+  try {
+    const res = await api("/api/submissions/open");
+    const { open } = await res.json();
+    $(open ? "form" : "closed").hidden = false;
+    if (open) refreshGames();
+  } catch {
+    $("closed").hidden = false;
+  }
+})();
+</script>
+</body>
+</html>

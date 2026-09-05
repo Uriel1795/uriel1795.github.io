@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review queue — Robot Archive</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#12171A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F4F2; --ink:#12171A; --ink-60:#5A6468; --rule:#C9CDC9;
+  --red:#E4002B; --blue:#0072CE; --alu:#B4BAB8; --green:#1B7F3B;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);
+  font-family:"Archivo",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:20px 20px 80px}
+
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding-bottom:14px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap}
+.mark{font-variation-settings:"wdth" 118,"wght" 800;font-size:24px;text-transform:uppercase}
+.mark em{font-style:normal;color:var(--red)}
+.mark a{color:inherit;text-decoration:none}
+.mark a:hover{color:var(--red)}
+.mark span{font-variation-settings:"wdth" 100,"wght" 500;font-size:12px;
+  letter-spacing:.16em;color:var(--ink-60);margin-left:10px}
+
+button{font:inherit;cursor:pointer;border:1.5px solid var(--ink);background:var(--ink);
+  color:var(--paper);padding:9px 16px;font-size:14px;
+  font-variation-settings:"wdth" 96,"wght" 600}
+button:hover{background:#000}
+button.ghost{background:none;color:var(--ink)}
+button.ghost:hover{background:var(--ink);color:var(--paper)}
+button.go{border-color:var(--green);background:var(--green)}
+button.go:hover{background:#166a31}
+button.no{border-color:var(--red);background:none;color:var(--red)}
+button.no:hover{background:var(--red);color:var(--paper)}
+button.tiny{padding:5px 10px;font-size:11.5px;font-family:"IBM Plex Mono",monospace}
+button:disabled{opacity:.35;cursor:not-allowed}
+
+input[type=text],input[type=password],select,textarea{
+  font:inherit;font-size:14px;padding:8px 10px;background:#fff;
+  border:1px solid var(--rule);color:var(--ink);border-radius:0;width:100%}
+input:focus,select:focus{outline:2px solid var(--blue);outline-offset:-1px}
+
+.bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:20px;
+  padding:14px 16px;background:var(--alu);
+  border-top:1.5px solid #EDF0EE;border-bottom:1.5px solid #7E8684}
+.bar .who{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:#2A3134}
+.bar input{max-width:260px}
+
+.tabs{display:flex;gap:0;margin-top:24px;border-bottom:1.5px solid var(--ink)}
+.tabs button{background:none;color:var(--ink-60);border:0;border-bottom:3px solid transparent;
+  padding:10px 16px;font-size:14px}
+.tabs button[aria-current="true"]{color:var(--ink);border-color:var(--red)}
+.tabs button:hover{background:none;color:var(--ink)}
+
+.empty{margin:50px 0;font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-60)}
+
+.sub{border:1px solid var(--rule);background:#fff;margin-top:20px}
+.sub header{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;
+  padding:16px 18px;border-bottom:1px solid var(--rule)}
+.sub .team{font-variation-settings:"wdth" 110,"wght" 800;font-size:24px;letter-spacing:-.02em}
+.sub .season{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-60)}
+.sub .when{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60)}
+.sub .body{padding:18px}
+
+.warn{margin:0 0 14px;padding:10px 12px;background:#FFF6F7;border-left:3px solid var(--red);
+  font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.7}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:720px){.grid{grid-template-columns:1fr}}
+.f label{display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60);margin-bottom:4px}
+.f{margin-bottom:12px}
+
+.files{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 0}
+.files a{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink);
+  text-decoration:none;border:1px solid var(--rule);padding:7px 11px}
+.files a:hover{border-color:var(--ink)}
+
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px}
+.shots figure{margin:0;border:1px solid var(--rule)}
+.shots img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--alu);cursor:zoom-in}
+.shots figcaption{padding:7px 9px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-60)}
+.checkme{margin:10px 0 0;font-size:13px;color:var(--red)}
+
+.decide{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  margin-top:18px;padding-top:16px;border-top:1px solid var(--rule)}
+.decide select{max-width:320px}
+.note{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-60)}
+
+.lightbox{position:fixed;inset:0;background:rgba(12,16,18,.94);display:grid;place-items:center;
+  z-index:50;padding:24px;cursor:zoom-out}
+.lightbox[hidden]{display:none}
+.lightbox img{max-width:94vw;max-height:88vh;object-fit:contain}
+
+.toast{font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.toast.err{color:var(--red)}
+.toast.ok{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark"><a href="index.html">← Robot <em>Archive</em></a> <span>Review</span></div>
+    <span class="toast" id="toast"></span>
+  </header>
+
+  <div class="bar" id="signinbar">
+    <div class="who" id="whoami">Checking…</div>
+    <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password">
+    <button id="signin">Sign in</button>
+    <button class="ghost" id="signout" hidden>Sign out</button>
+  </div>
+
+  <div id="panel" hidden>
+    <div class="tabs" id="tabs">
+      <button type="button" data-status="pending"  aria-current="true">Waiting</button>
+      <button type="button" data-status="approved">Approved</button>
+      <button type="button" data-status="rejected">Turned down</button>
+    </div>
+    <p class="empty" id="empty" hidden></p>
+    <div id="list"></div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" hidden><img id="lbimg" alt=""></div>
+
+<script>
+const API = "https://robot-archive-api-production.up.railway.app";
+const $ = id => document.getElementById(id);
+const api = (path, opts = {}) =>
+  fetch(API + path, {
+    credentials: "include",
+    cache: "no-store",
+    headers: opts.body ? { "Content-Type": "application/json" } : {},
+    ...opts,
+  });
+
+let CODES = {}, current = "pending";
+
+function toast(msg, kind = ""){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast " + kind;
+  if (msg) setTimeout(() => { if (t.textContent === msg) t.textContent = ""; }, 6000);
+}
+
+/* ---------------- sign in ---------------- */
+async function refreshAuth(){
+  try {
+    const me = await (await api("/api/me")).json();
+    $("whoami").textContent = me.signedIn ? "Signed in" : "Not signed in";
+    $("pw").hidden = me.signedIn;
+    $("signin").hidden = me.signedIn;
+    $("signout").hidden = !me.signedIn;
+    $("panel").hidden = !me.signedIn;
+    if (me.signedIn) load(current);
+  } catch {
+    $("whoami").innerHTML = "<b>Can't reach the API.</b>";
+  }
+}
+async function signIn(){
+  const password = $("pw").value;
+  if (!password) return toast("Enter the password", "err");
+  const res = await api("/api/login", { method:"POST", body: JSON.stringify({ password }) });
+  if (!res.ok) return toast(res.status === 401 ? "Wrong password" : "Sign-in failed", "err");
+  $("pw").value = "";
+  refreshAuth();
+}
+$("signin").addEventListener("click", signIn);
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") signIn(); });
+$("signout").addEventListener("click", async () => {
+  await api("/api/logout", { method:"POST" });
+  refreshAuth();
+});
+
+/* ---------------- the queue ---------------- */
+[...$("tabs").children].forEach(b => b.addEventListener("click", () => {
+  current = b.dataset.status;
+  [...$("tabs").children].forEach(x => x.setAttribute("aria-current", x === b));
+  load(current);
+}));
+
+const EMPTY = {
+  pending:  "Nothing waiting. ",
+  approved: "Nothing approved yet.",
+  rejected: "Nothing turned down.",
+};
+
+async function load(status){
+  $("list").replaceChildren();
+  $("empty").hidden = true;
+  try {
+    const res = await api(`/api/admin/submissions?status=${status}`);
+    if (!res.ok) throw new Error(`the API returned ${res.status}`);
+    const { items, codes } = await res.json();
+    CODES = codes || {};
+    if (!items.length){
+      $("empty").textContent = EMPTY[status];
+      $("empty").hidden = false;
+      return;
+    }
+    $("list").append(...items.map(card));
+  } catch (err) {
+    toast("Could not load the queue: " + err.message, "err");
+  }
+}
+
+const esc = v => String(v ?? "").replace(/[<>&"]/g, c =>
+  ({ "<":"&lt;", ">":"&gt;", "&":"&amp;", '"':"&quot;" }[c]));
+
+function card(item){
+  const el = document.createElement("article");
+  el.className = "sub";
+  const pending = item.status === "pending";
+
+  const warnings = (item.warnings ?? []).map(w => `⚠ ${esc(w)}`).join("<br>");
+
+  el.innerHTML = `
+    <header>
+      <span class="team">${esc(item.team)}</span>
+      <span class="season">${esc([item.program, item.game, item.year].filter(Boolean).join("  ·  "))}</span>
+      <span class="when">${new Date(item.submittedAt).toLocaleDateString()}</span>
+    </header>
+    <div class="body">
+      ${warnings ? `<p class="warn">${warnings}</p>` : ""}
+
+      <div class="grid">
+        <div class="f"><label>Team name</label>
+          <input type="text" class="e-teamname" value="${esc(item.teamName)}"></div>
+        <div class="f"><label>Channel</label>
+          <input type="text" class="e-channel" value="${esc(item.channel)}"></div>
+        <div class="f"><label>Record</label>
+          <input type="text" class="e-record" value="${esc(item.record)}"></div>
+        <div class="f"><label>Award</label>
+          <input type="text" class="e-award" value="${esc(item.award)}"></div>
+      </div>
+      <div class="f"><label>Note</label>
+        <textarea class="e-note" rows="2">${esc(item.note)}</textarea></div>
+
+      <div class="files">
+        ${item.previewModel ? `<a href="${item.previewModel}" target="_blank" rel="noopener">Download the model</a>` : `<span class="note">No model</span>`}
+        ${item.previewNotebook ? `<a href="${item.previewNotebook}" target="_blank" rel="noopener">Open the notebook</a>` : ""}
+        ${item.revealUrl ? `<a href="${esc(item.revealUrl)}" target="_blank" rel="noopener noreferrer">Their reveal video</a>` : ""}
+      </div>
+
+      ${(item.previewMementos ?? []).length ? `
+        <p class="checkme">Check every photo for faces before approving.</p>
+        <div class="shots">
+          ${item.previewMementos.map(m => `
+            <figure>
+              <img src="${m.url}" alt="${esc(m.caption)}" loading="lazy">
+              <figcaption>${esc(m.caption) || "no caption"}</figcaption>
+            </figure>`).join("")}
+        </div>` : ""}
+
+      ${pending ? `
+        <div class="decide">
+          <button type="button" class="go act-approve">Approve</button>
+          <button type="button" class="ghost act-publish">Approve &amp; publish now</button>
+          <select class="reason">
+            <option value="">— reason for turning it down —</option>
+            ${Object.entries(CODES).map(([k, v]) =>
+              `<option value="${k}">${esc(v || "Something else")}</option>`).join("")}
+          </select>
+          <button type="button" class="no act-reject">Turn down</button>
+        </div>
+        <p class="note" style="margin-top:8px">Approving keeps the embargo — it publishes
+          after Worlds. Use “publish now” only if the robot is already public.</p>
+      ` : `
+        <p class="note" style="margin-top:14px">
+          ${esc(item.status)}${item.rejectionCode ? " — " + esc(CODES[item.rejectionCode] || item.rejectionCode) : ""}
+        </p>`}
+    </div>`;
+
+  if (pending){
+    const patch = () => ({
+      teamName: el.querySelector(".e-teamname").value.trim() || undefined,
+      channel:  el.querySelector(".e-channel").value.trim() || undefined,
+      record:   el.querySelector(".e-record").value.trim() || undefined,
+      award:    el.querySelector(".e-award").value.trim() || undefined,
+      note:     el.querySelector(".e-note").value.trim() || undefined,
+    });
+
+    const decide = async (fn, label) => {
+      el.querySelectorAll("button").forEach(b => b.disabled = true);
+      try {
+        /* Save any edits first, so a fixed typo isn't lost on approval. */
+        const p = patch();
+        if (Object.values(p).some(v => v !== undefined))
+          await api(`/api/admin/submissions/${item.id}`, { method:"PUT", body: JSON.stringify(p) });
+        await fn();
+        toast(`${item.team} — ${label}`, "ok");
+        load(current);
+      } catch (err) {
+        toast(err.message, "err");
+        el.querySelectorAll("button").forEach(b => b.disabled = false);
+      }
+    };
+
+    const approve = publishNow => async () => {
+      const res = await api(`/api/admin/submissions/${item.id}/approve`,
+        { method:"POST", body: JSON.stringify({ publishNow }) });
+      if (!res.ok) throw new Error((await res.json()).error || "approval failed");
+    };
+
+    el.querySelector(".act-approve").addEventListener("click",
+      () => decide(approve(false), "approved, publishes after Worlds"));
+    el.querySelector(".act-publish").addEventListener("click",
+      () => decide(approve(true), "approved and published"));
+
+    el.querySelector(".act-reject").addEventListener("click", () => {
+      const code = el.querySelector(".reason").value;
+      if (!code) return toast("Pick a reason first — the submitter sees it", "err");
+      decide(async () => {
+        const res = await api(`/api/admin/submissions/${item.id}/reject`,
+          { method:"POST", body: JSON.stringify({ code }) });
+        if (!res.ok) throw new Error((await res.json()).error || "rejection failed");
+      }, "turned down");
+    });
+  }
+
+  el.querySelectorAll(".shots img").forEach(img =>
+    img.addEventListener("click", () => {
+      $("lbimg").src = img.src;
+      $("lightbox").hidden = false;
+    }));
+
+  return el;
+}
+
+$("lightbox").addEventListener("click", () => { $("lightbox").hidden = true; });
+addEventListener("keydown", e => { if (e.key === "Escape") $("lightbox").hidden = true; });
+
+refreshAuth();
+</script>
+</body>
+</html>

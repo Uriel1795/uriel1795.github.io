@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your submission — Robot Archive</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#12171A">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F4F2; --ink:#12171A; --ink-60:#5A6468; --rule:#C9CDC9;
+  --red:#E4002B; --blue:#0072CE; --green:#1B7F3B; --amber:#8A6100;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:"Archivo",system-ui,sans-serif;font-variation-settings:"wdth" 100;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:640px;margin:0 auto;padding:20px 20px 72px}
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding-bottom:14px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap;
+}
+.mark{font-variation-settings:"wdth" 118,"wght" 800;font-size:24px;text-transform:uppercase}
+.mark em{font-style:normal;color:var(--red)}
+.mark a{color:inherit;text-decoration:none}
+.mark a:hover{color:var(--red)}
+.mark span{
+  font-variation-settings:"wdth" 100,"wght" 500;font-size:12px;letter-spacing:.16em;
+  color:var(--ink-60);margin-left:10px;
+}
+a{color:var(--blue)}
+
+.state{
+  margin-top:34px;padding:26px;background:#fff;border:1px solid var(--rule);
+  border-left-width:4px;
+}
+.state.pending {border-left-color:var(--amber)}
+.state.approved{border-left-color:var(--green)}
+.state.rejected{border-left-color:var(--red)}
+.state.waiting {border-left-color:var(--ink-60)}
+
+.state h1{
+  margin:0;font-variation-settings:"wdth" 108,"wght" 800;
+  font-size:clamp(24px,4vw,32px);letter-spacing:-.02em;line-height:1.05;
+}
+.state .what{
+  margin:10px 0 0;font-family:"IBM Plex Mono",monospace;font-size:12.5px;
+  letter-spacing:.06em;color:var(--ink-60);
+}
+.state p{font-size:16px;line-height:1.7;margin:18px 0 0}
+.state .why{
+  margin-top:18px;padding:14px 16px;background:var(--paper);
+  border-left:3px solid var(--red);font-size:15px;line-height:1.6;
+}
+.meta{
+  margin-top:22px;padding-top:16px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);line-height:1.8;
+}
+.btn{
+  display:inline-block;margin-top:20px;border:1.5px solid var(--ink);background:var(--ink);
+  color:var(--paper);padding:11px 20px;text-decoration:none;font-size:15px;
+  font-variation-settings:"wdth" 96,"wght" 600;
+}
+.btn:hover{background:#000;color:var(--paper)}
+footer{
+  margin-top:48px;padding-top:18px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-60);line-height:1.9;
+}
+footer a{color:var(--ink-60);text-decoration:none;border-bottom:1px solid var(--rule)}
+footer a:hover{color:var(--ink);border-color:var(--ink)}
+footer .row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark"><a href="index.html">← Robot <em>Archive</em></a> <span>Submission</span></div>
+  </header>
+
+  <div class="state waiting" id="state">
+    <h1 id="headline">Checking…</h1>
+    <p class="what" id="what"></p>
+    <div id="body"></div>
+  </div>
+
+  <footer>
+    <div class="row">
+      <a href="index.html">Archive</a>
+      <a href="submit.html">Submit a robot</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+const API = "https://robot-archive-api-production.up.railway.app";
+const $ = id => document.getElementById(id);
+
+const REASONS = {
+  face: "One of the photos shows someone's face. The archive doesn't publish photos of students, so it can't go up as it is.",
+  identifying: "Something in the files identifies a person — a name on a whiteboard, a badge, an address on a notebook page.",
+  wrong_team: "The team number doesn't seem to match the robot.",
+  duplicate: "That team already has a robot for that season.",
+  broken_model: "The model wouldn't open. It may be corrupted, or the scan came out unusable.",
+  not_your_robot: "The model doesn't look like your team's own robot.",
+  too_big: "One of the files was over the size limit.",
+  not_your_notebook: "The notebook doesn't appear to be your team's own.",
+  empty: "There was nothing to show — no model, no notebook, no photos.",
+  spam: "This wasn't a real submission.",
+};
+
+const fmtDate = d => d ? new Date(d).toLocaleDateString(undefined,
+  { year:"numeric", month:"long", day:"numeric" }) : "";
+
+function show({ cls, headline, what, html, meta }){
+  $("state").className = "state " + cls;
+  $("headline").textContent = headline;
+  $("what").textContent = what || "";
+  $("body").innerHTML = (html || "") + (meta ? `<div class="meta">${meta}</div>` : "");
+}
+
+(async function(){
+  const token = new URLSearchParams(location.search).get("t");
+  if (!token) {
+    return show({
+      cls: "waiting", headline: "No submission link",
+      html: `<p>This page needs the link you were given when you submitted. If you've
+             lost it, the quickest thing is to check whether your robot is on the
+             <a href="index.html">archive</a> — if it isn't there and you never heard
+             back, just <a href="submit.html">submit it again</a>.</p>`,
+    });
+  }
+
+  let s;
+  try {
+    const res = await fetch(`${API}/api/submissions/${encodeURIComponent(token)}`);
+    if (res.status === 404) {
+      return show({
+        cls: "waiting", headline: "We can't find that one",
+        html: `<p>That link doesn't match any submission. It may have been mistyped, or
+               copied without the whole address. Sending the robot again is always fine —
+               there's no limit and no penalty.</p>
+               <a class="btn" href="submit.html">Submit a robot</a>`,
+      });
+    }
+    if (!res.ok) throw new Error(`the server returned ${res.status}`);
+    s = await res.json();
+  } catch (err) {
+    return show({
+      cls: "waiting", headline: "Couldn't check just now",
+      html: `<p>Something went wrong reaching the archive — ${err.message}. Try again in
+             a few minutes; your submission isn't affected.</p>`,
+    });
+  }
+
+  const what = [s.team, s.game, s.year].filter(Boolean).join("  \u00b7  ");
+  const meta = [
+    s.submittedAt ? `Submitted ${fmtDate(s.submittedAt)}` : null,
+    s.reviewedAt ? `Reviewed ${fmtDate(s.reviewedAt)}` : null,
+  ].filter(Boolean).join("<br>");
+
+  if (s.status === "pending") {
+    return show({
+      cls: "pending", headline: "Waiting to be reviewed", what, meta,
+      html: `<p>It's in the queue. Every submission gets looked at by a person, which
+             usually takes a few days — this is a side project run by one person, so
+             it isn't instant.</p>
+             <p>Nothing to do at your end. Keep this link and check back whenever.</p>`,
+    });
+  }
+
+  if (s.status === "rejected") {
+    const why = REASONS[s.rejectionCode] || s.rejectionReason
+      || "It couldn't go up as submitted.";
+    const extra = s.rejectionReason && REASONS[s.rejectionCode]
+      ? `<p>${s.rejectionReason}</p>` : "";
+    return show({
+      cls: "rejected", headline: "Not this time", what, meta,
+      html: `<div class="why">${why}</div>${extra}
+             <p>Most of these are quick to fix. Sort out the problem and send it again —
+             there's no limit and no penalty for resubmitting. If the reason doesn't make
+             sense, or you think it's a mistake, <a href="contact.html">say so</a> and
+             I'll take another look.</p>
+             <a class="btn" href="submit.html">Submit it again</a>`,
+    });
+  }
+
+  if (s.status === "approved" && s.embargoed) {
+    return show({
+      cls: "approved", headline: "Accepted — held until after Worlds", what, meta,
+      html: `<p>It's approved and waiting. Robots stay hidden until after Worlds so that
+             nobody's design is given away mid-season. Yours will appear on the archive
+             automatically on ${fmtDate(s.publishAfter)} — you don't need to do anything.</p>
+             <p>If you've since shown the robot publicly yourselves, send the link over
+             and it can go up sooner.</p>`,
+    });
+  }
+
+  if (s.status === "approved") {
+    const url = `robot-archive.html?team=${encodeURIComponent(s.team)}` +
+                `&year=${(s.year || "").slice(0,4)}`;
+    return show({
+      cls: "approved", headline: "It's up", what, meta,
+      html: `<p>Your robot is on the archive. Thanks for sending it in — this is exactly
+             the work that usually disappears when the robot comes apart.</p>
+             <a class="btn" href="${url}">See it</a>`,
+    });
+  }
+
+  show({ cls: "waiting", headline: "Nothing to report yet", what, meta });
+})();
+</script>
+</body>
+</html>
